@@ -57,3 +57,13 @@
 
 * Mon Nov 01 02:50:06 2004, pabs <pabs@pablotron.org>
   * rubilicious.rb: doc fix from josh lucas <josh@stonecottage.com>
+
+* Sat Nov 27 12:58:28 2004, pabs <pabs@pablotron.org>
+  * rubilicious.rb: change URI encoding to CGI::escape (suggested by
+    James Britt)
+  * rubilicious.rb: added Rubilicious#base_uri, to override the 
+    base URI of API requests (the Delicious API documentation says that
+    the URL could change at some point, so this will allow existing
+    rubilicious installs to work without code muckery.  You can also set
+    the RUBILICIOUS_BASE_URI environment variable (if it's not set, then
+    Rubilicious#base_uri defaults to 'http://del.icio.us/api'

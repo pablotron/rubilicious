@@ -35,6 +35,8 @@
 #######################################################################
 
 # load required libraries
+require 'cgi'
+require 'uri'
 require 'net/http'
 require 'rexml/document'
 
@@ -54,9 +56,7 @@ class String
   # XML escape elements, including spaces, ?, and +
   #
   def uri_escape
-    str = xml_escape.gsub(/\+/, '&43;')
-    str = str.gsub(/\s/, '+')
-    str = str.gsub(/\?/, '&63;')
+    CGI::escape(self)
   end
 end
 
@@ -172,7 +172,7 @@ end
 #
 class Rubilicious
   attr_reader :user
-  attr_accessor :use_proxy
+  attr_accessor :use_proxy, :base_uri
 
   VERSION = '0.1.3'
 
@@ -232,12 +232,19 @@ class Rubilicious
     # get proxy info
     proxy_host, proxy_port = find_http_proxy
 
+    # get host, port, and base URI for API queries
+    uri = URI::parse(@base_uri)
+    base = uri.request_uri
+
+    # prepend base to url
+    url = "#{base}/#{url}"
+
     # connect to delicious
-    http = Net::HTTP.new('del.icio.us', 80, proxy_host, proxy_port)
+    http = Net::HTTP.new(uri.host, uri.port, proxy_host, proxy_port)
     http.start
 
     # get URL, check for error
-    resp = http.get(url, @headers);
+    resp = http.get(url, @headers)
     raise "HTTP #{resp.code}: #{resp.message}" unless resp.code =~ /2\d{2}/
 
     # close HTTP connection, return response
@@ -280,6 +287,7 @@ class Rubilicious
   #
   def initialize(user, pass)
     @user, @use_proxy = user, true
+    @base_uri = ENV['RUBILICIOUS_BASE_URI'] || 'http://del.icio.us/api'
     @headers = {
       'Authorization'   => 'Basic ' << ["#{user}:#{pass}"].pack('m').strip,
       'User-Agent'      => "Rubilicious/#{Rubilicious::VERSION} Ruby/#{RUBY_VERSION}"
@@ -306,7 +314,7 @@ class Rubilicious
   #        dates.map { |args| args.join(',') }.join("\n")
   #
   def dates(tag = nil)
-    get('/api/posts/dates?' << (tag ? "tag=#{tag}" : ''), 'date').inject({}) do  |ret, e|
+    get('posts/dates?' << (tag ? "tag=#{tag}" : ''), 'date').inject({}) do  |ret, e|
       ret[e['date']] = e['count'].to_i
       ret
     end
@@ -322,7 +330,7 @@ class Rubilicious
   #   puts tags.keys.sort.map { |tag| "#{tag},#{tags[tag]}" }.join("\n")
   #
   def tags
-    get('/api/tags/get?', 'tag').inject({}) do |ret, e|
+    get('tags/get?', 'tag').inject({}) do |ret, e|
       ret[e['tag']] = e['count'].to_i
       ret
     end
@@ -348,7 +356,7 @@ class Rubilicious
   #
   def posts(date = nil, tag = nil)
     args = [(date ? "dt=#{date}" : nil), (tag ? "tag=#{tag.uri_escape}" : nil)]
-    get('/api/posts/get?' << args.compact.join('&amp;'), 'post').map do |e|
+    get('posts/get?' << args.compact.join('&amp;'), 'post').map do |e|
       e['tags'] = e['tag'].split(' ')
       e.delete 'tag'
       e['time'] = Time::from_iso8601(e['time'])
@@ -370,7 +378,7 @@ class Rubilicious
   #
   def recent(tag = nil, count = nil)
     args = [(count ? "count=#{count}" : nil), (tag ? "tag=#{tag.uri_escape}" : nil)]
-    get('/api/posts/recent?' << args.compact.join('&amp;'), 'post').map do |e|
+    get('posts/recent?' << args.compact.join('&amp;'), 'post').map do |e|
       e['tags'] = e['tag'].split(' ')
       e.delete 'tag'
       e['time'] = Time::from_iso8601(e['time'])
@@ -406,7 +414,7 @@ class Rubilicious
       (ext ? "extended=#{ext.uri_escape}" : nil),
       (tags ? "tags=#{tags.uri_escape}" : nil), ("dt=#{time.to_iso8601}")
     ]
-    get('/api/posts/add?' << args.compact.join('&amp;'))
+    get('posts/add?' << args.compact.join('&amp;'))
     nil
   end
 
@@ -424,7 +432,7 @@ class Rubilicious
   #
   def rename(old, new)
     args = ["old=#{old.uri_escape}", "new=#{new.uri_escape}"]
-    get('/api/tags/rename?' << args.join('&amp;'))
+    get('tags/rename?' << args.join('&amp;'))
     nil
   end
 
@@ -439,7 +447,7 @@ class Rubilicious
   #
   def inbox(date = nil)
     time_prefix = "#{date || Time.now.strftime('%Y-%m-%d')}T"
-    ret = get('/api/inbox/get?' << (date ? "dt=#{date}" : ''), 'post').map do |post|
+    ret = get('inbox/get?' << (date ? "dt=#{date}" : ''), 'post').map do |post|
       post['time'] = Time::from_iso8601("#{time_prefix}#{post['time']}Z")
       post
     end
@@ -457,7 +465,7 @@ class Rubilicious
   #   puts dates.keys.sort { |a, b| dates[b] <=> dates[a] }.slice(0, 10)
   #
   def inbox_dates
-    get('/api/inbox/dates?', 'date').inject({}) do  |ret, e|
+    get('inbox/dates?', 'date').inject({}) do  |ret, e|
       ret[e['date']] = e['count'].to_i
       ret
     end
@@ -477,7 +485,7 @@ class Rubilicious
   #   end
   #
   def subs
-    get('/api/inbox/subs?', 'sub').inject({}) do |ret, e|
+    get('inbox/subs?', 'sub').inject({}) do |ret, e|
       ret[e['user']] = [] unless ret[e['user']]
       ret[e['user']] += e['tag'].split(' ')
       ret
@@ -496,7 +504,7 @@ class Rubilicious
   def sub(user, tag = nil)
     raise "Missing user" unless user
     args = ["user=#{user.uri_escape}", (tag ? "tag=#{tag.uri_escape}" : nil)]
-    get('/api/inbox/sub?' << args.compact.join('&amp;'), 'post')
+    get('inbox/sub?' << args.compact.join('&amp;'), 'post')
     nil
   end
 
@@ -512,7 +520,7 @@ class Rubilicious
   def unsub(user, tag = nil)
     raise "Missing user" unless user
     args = ["user=#{user}", (tag ? "tag=#{tag}" : nil)]
-    get('/api/inbox/unsub?' << args.compact.join('&amp;'))
+    get('inbox/unsub?' << args.compact.join('&amp;'))
     nil
   end
 
