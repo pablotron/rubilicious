@@ -78,3 +78,7 @@
   * rubilicious.rb: add support for #update
   * rubilicious.rb: add mandatory 1-second delay between calls (as per
     the API documentation's request)
+
+* Fri Mar 11 02:58:10 2005, pabs <pabs@pablotron.org>
+  * README: update version to 0.1.4
+  * rubilicious.gemspec: ditto
