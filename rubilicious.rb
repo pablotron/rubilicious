@@ -296,7 +296,7 @@ class Rubilicious
   # Examples:
   #   dates = r.dates
   #   puts "date,count"
-  #   dates.keys.sort.each do |day| 
+  #   dates.keys.sort.each do |date| 
   #     puts "#{date},#{dates[date]}"
   #   end
   #

@@ -54,3 +54,6 @@
     from Guillaume Bisch <guillaume@bisch.org>
   * rubilicious.rb: added Rubilicious#use_proxy override (defaults to
     true), just in case people don't want to use the proxy
+
+* Mon Nov 01 02:50:06 2004, pabs <pabs@pablotron.org>
+  * rubilicious.rb: doc fix from josh lucas <josh@stonecottage.com>
