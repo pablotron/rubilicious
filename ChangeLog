@@ -8,8 +8,12 @@
 	* releasing versoin 0.1.0
 
 * Thu Sep 23 14:52:41 2004, pabs <pabs@pablotron.org>
-	* minor fixes to gemspec
+	* rubilicious.gemspec: minor fixes
 	* added MANIFEST
 
 * Thu Sep 23 14:53:20 2004, pabs <pabs@pablotron.org>
 	* _really_ releasing 0.1.0
+
+* Thu Sep 23 14:56:27 2004, pabs <pabs@pablotron.org>
+  * rubilicious.gemspec: ARGH this time it better work
+	* finally releasing 0.1.0
