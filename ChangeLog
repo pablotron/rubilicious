@@ -1,19 +1,25 @@
 * Thu Sep 23 07:20:39 2004, pabs <pabs@pablotron.org>
-	* initial CVS commit
+  * initial CVS commit
 
 * Thu Sep 23 14:44:34 2004, pabs <pabs@pablotron.org>
-	* removing Rubilicious-0.1.0.gem
+  * removing Rubilicious-0.1.0.gem
 
 * Thu Sep 23 14:46:13 2004, pabs <pabs@pablotron.org>
-	* releasing versoin 0.1.0
+  * releasing versoin 0.1.0
 
 * Thu Sep 23 14:52:41 2004, pabs <pabs@pablotron.org>
-	* rubilicious.gemspec: minor fixes
-	* added MANIFEST
+  * rubilicious.gemspec: minor fixes
+  * added MANIFEST
 
 * Thu Sep 23 14:53:20 2004, pabs <pabs@pablotron.org>
-	* _really_ releasing 0.1.0
+  * _really_ releasing 0.1.0
 
 * Thu Sep 23 14:56:27 2004, pabs <pabs@pablotron.org>
   * rubilicious.gemspec: ARGH this time it better work
-	* finally releasing 0.1.0
+  * finally releasing 0.1.0
+
+* Wed Sep 29 11:34:15 2004, pabs <pabs@pablotron.org>
+  * rubilicious.rb: don't fetch URL twice
+  * rubilicious.rb: inc version to 0.1.1
+  * rubilicious.gemspec: inc version to 0.1.1
+  * README: inc version to 0.1.1

@@ -173,7 +173,7 @@ end
 class Rubilicious
   attr_reader :user
 
-  VERSION = '0.1.0'
+  VERSION = '0.1.1'
 
   #
   # Low-level HTTP GET.
@@ -201,7 +201,6 @@ class Rubilicious
   # This method is private.
   #
   def get(url, elem = nil)
-    http_get(url)
     ret = REXML::Document.new(http_get(url))
     if elem
       ary = []
