@@ -172,8 +172,56 @@ end
 #
 class Rubilicious
   attr_reader :user
+  attr_accessor :use_proxy
 
-  VERSION = '0.1.2'
+  VERSION = '0.1.3'
+
+  #
+  # get the HTTP proxy server and port from the environment
+  # Returns [nil, nil] if a proxy is not set
+  #
+  # This method is private
+  #
+  def find_http_proxy
+    ret = [nil, nil]
+
+    # check the platform.  If we're running in windows then we need to 
+    # check the registry
+    if @use_proxy
+      if RUBY_PLATFORM =~ /win32/i
+        # Find a proxy in Windows by checking the registry.
+        # this code shamelessly copied from Raggle :D
+
+        require 'win32/registry'
+
+        Win32::Registry::open(
+          Win32::Registry::HKEY_CURRENT_USER,
+          'Software\Microsoft\Windows\CurrentVersion\Internet Settings'
+        ) do |reg|
+          # check and see if proxy is enabled
+          if reg.read('ProxyEnable')[1] != 0
+            # get server, port, and no_proxy (overrides)
+            server = reg.read('ProxyServer')[1]
+            np = reg.read('ProxyOverride')[1]
+
+            server =~ /^([^:]+):(.+)$/
+            ret = [$1, $2]
+
+            # don't bother with no_proxy support
+            # ret['no_proxy'] = np.gsub(/;/, ',') if np && np.length > 0
+          end
+        end
+        
+        ret
+      else
+        # handle UNIX systems
+        ENV['http_proxy'].sub('http://','').split(':') if ENV['http_proxy']
+      end
+    end
+
+    # return host and port
+    ret
+  end
 
   #
   # Low-level HTTP GET.
@@ -181,8 +229,11 @@ class Rubilicious
   # This method is private.
   #
   def http_get(url)
+    # get proxy info
+    proxy_host, proxy_port = find_http_proxy
+
     # connect to delicious
-    http = Net::HTTP.new('del.icio.us', 80)
+    http = Net::HTTP.new('del.icio.us', 80, proxy_host, proxy_port)
     http.start
 
     # get URL, check for error
@@ -215,7 +266,7 @@ class Rubilicious
   end
 
   # don't touch these :)
-  private :get, :http_get
+  private :get, :http_get, :find_http_proxy
 
 
   #
@@ -228,7 +279,7 @@ class Rubilicious
   #   r = Rubilicious.new('pabs', 'password')
   #
   def initialize(user, pass)
-    @user = user
+    @user, @use_proxy = user, true
     @headers = {
       'Authorization'   => 'Basic ' << ["#{user}:#{pass}"].pack('m').strip,
       'User-Agent'      => "Rubilicious/#{Rubilicious::VERSION} Ruby/#{RUBY_VERSION}"
