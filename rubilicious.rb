@@ -422,7 +422,8 @@ class Rubilicious
   #
   def subs
     get('/api/inbox/subs?', 'sub').inject({}) do |ret, e|
-      ret[e['user']] = e['tag'].split(' ')
+      ret[e['user']] = [] unless ret[e['user']]
+      ret[e['user']] += e['tag'].split(' ')
       ret
     end
   end

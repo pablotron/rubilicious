@@ -26,3 +26,6 @@
 
 * Wed Sep 29 11:37:36 2004, pabs <pabs@pablotron.org>
   * release version 0.1.1
+
+* Fri Oct 01 15:26:27 2004, pabs <pabs@pablotron.org>
+  * rubilicious.rb: handle multiple subs in Rubilicious#subs correctly
