@@ -31,3 +31,7 @@
   * rubilicious.rb: handle multiple subs in Rubilicious#subs correctly
   * rubilicious.rb: convert time in Rubilicious#inbox return
   * rubilicious.rb: added Rubilicious#user_tags
+
+* Fri Oct 01 16:41:28 2004, pabs <pabs@pablotron.org>
+  * rubilicious.rb: fix time handling in user_tags
+  * rubilicious.rb: rename user tags to user_posts

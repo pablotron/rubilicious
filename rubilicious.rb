@@ -387,10 +387,12 @@ class Rubilicious
   #   r.inbox.each { |post| puts "#{post['user']},#{post['href']}" }
   #
   def inbox(date = nil)
-    time_prefix = "#{date | Time.now.strftime('%Y-%m-%d')}T"
-    get('/api/inbox/get?' << (date ? "dt=#{date}" : ''), 'post').map do |entry|
-      post['time'] = Time::from_iso8660("#{time_prefix}#{post['time']}")
+    time_prefix = "#{date || Time.now.strftime('%Y-%m-%d')}T"
+    ret = get('/api/inbox/get?' << (date ? "dt=#{date}" : ''), 'post').map do |post|
+      post['time'] = Time::from_iso8601("#{time_prefix}#{post['time']}Z")
+      post
     end
+    ret
   end
 
   #
@@ -553,7 +555,7 @@ class Rubilicious
     ret.join("\n")
   end
 
-  def user_tags(user)
+  def user_posts(user)
     was_subscribed = true
     ret = []
 
@@ -564,7 +566,7 @@ class Rubilicious
     end
     
     # grab list of user's posts
-    inbox_dates.each do |date|
+    inbox_dates.keys.each do |date|
       ret += inbox(date).find_all { |post| post['user'] == user }
     end
 
