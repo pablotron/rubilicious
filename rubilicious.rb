@@ -78,7 +78,7 @@ class Time
   # Convert time to an ISO-8601-format string.
   #
   def to_iso8601
-    strftime('%y-%m-%dT%H:%M:%SZ')
+    strftime('%Y-%m-%dT%H:%M:%SZ')
   end
 end
 
@@ -555,7 +555,23 @@ class Rubilicious
     ret.join("\n")
   end
 
-  def user_posts(user)
+  #
+  # Return all of a user's posts, optionally filtered by tag.
+  #
+  # WARNING: This method can generate a large number of requests to 
+  # del.icio.us, and could be construed as abuse.  Use sparingly, and at
+  # your own risk.
+  #
+  # Raises an exception on error.
+  #
+  # Example:
+  #   # save all posts every by 'delineator' to XBEL format to file
+  #   # "delineator.xbel"
+  #   File::open('delineator.xbel', 'w') do |file|
+  #     file.puts r.user_posts('delineator').to_xbel
+  #   end
+  #
+  def user_posts(user, tag = nil)
     was_subscribed = true
     ret = []
 
@@ -567,7 +583,9 @@ class Rubilicious
     
     # grab list of user's posts
     inbox_dates.keys.each do |date|
-      ret += inbox(date).find_all { |post| post['user'] == user }
+      ret += inbox(date).find_all do |post| 
+        post['user'] == user && (tag == nil || post['tags'].include?(tag))
+      end
     end
 
     # unsubscribe from user unless we were already subscribed

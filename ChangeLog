@@ -35,3 +35,8 @@
 * Fri Oct 01 16:41:28 2004, pabs <pabs@pablotron.org>
   * rubilicious.rb: fix time handling in user_tags
   * rubilicious.rb: rename user tags to user_posts
+
+* Fri Oct 01 17:03:55 2004, pabs <pabs@pablotron.org>
+  * rubilicious.rb: add documentation to user_posts
+  * rubilicious.rb: add optional tag argument to user_posts
+  * rubilicious.rb: 4-digit year in Time#to_iso8601
