@@ -1,0 +1,6 @@
+(^|/)CVS($|/)
+(^|/)\.hg($|/)
+(^|/)\.hgtags($|/)
+^tailor.state$
+^tailor.state.old$
+^tailor.state.journal$

@@ -1,0 +1,23 @@
+Rubilicious 0.1.0 README
+========================
+
+This document was last updated on Thu Sep 23 07:17:25 2004.  Please see
+the file COPYING for licensing and warranty information.  Visit
+http://pablotron.org/software/rubilicious/ for the latest version of
+this software.
+
+Overview
+========
+Delicious (http://del.icio.us/) bindings for Ruby.  You'll need to
+create an account at Delicious in order to use Rubilicious.  An
+RDoc-generated API reference is in doc/, and some simple examples are in
+examples/
+
+Requirements
+============
+* Ruby (http://www.ruby-lang.org/), version 1.8.0 (or newer).
+
+About the Author
+================
+Paul Duncan <pabs@pablotron.org>
+http://www.pablotron.org/
