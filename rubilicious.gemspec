@@ -30,7 +30,7 @@ spec = Gem::Specification.new do |s|
   s.rdoc_options = ['--webcvs',
   'http://cvs.pablotron.org/cgi-bin/viewcvs.cgi/rubilicious/', '--title',
   'Rubilicious API Documentation', 'rubilicious.rb', 'README', 'ChangeLog',
-  'AUTHORS', 'COPYING']
+  'COPYING', 'add_link.rb', 'del_to_xbel.rb', 'list_tags.rb']
 
   #### Author and project details.
 

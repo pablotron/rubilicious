@@ -3,3 +3,10 @@
 
 * Thu Sep 23 14:44:34 2004, pabs <pabs@pablotron.org>
 	* removing Rubilicious-0.1.0.gem
+
+* Thu Sep 23 14:46:13 2004, pabs <pabs@pablotron.org>
+	* releasing versoin 0.1.0
+
+* Thu Sep 23 14:52:41 2004, pabs <pabs@pablotron.org>
+	* minor fixes to gemspec
+	* added MANIFEST
