@@ -106,7 +106,7 @@ class Array
     # find all bookmarks in list with given tag and sort tag
     tags = find_all { |e| !tag || e['tags'].include?(tag) }.inject({}) do |tags, bm|
       if bm['tags'] && bm['tags'].size > 0
-        bm['tags'].sort!
+        bm['tags'] = bm['tags'] ? bm['tags'].split(' ').sort : []
         # TODO: alias support
         bm['tags'].each { |tag| tags[tag] ||= []; tags[tag] << bm }
       else 
@@ -387,7 +387,10 @@ class Rubilicious
   #   r.inbox.each { |post| puts "#{post['user']},#{post['href']}" }
   #
   def inbox(date = nil)
-    get('/api/inbox/get?' << (date ? "dt=#{date}" : ''), 'post')
+    time_prefix = "#{date | Time.now.strftime('%Y-%m-%d')}T"
+    get('/api/inbox/get?' << (date ? "dt=#{date}" : ''), 'post').map do |entry|
+      post['time'] = Time::from_iso8660("#{time_prefix}#{post['time']}")
+    end
   end
 
   #
@@ -548,6 +551,28 @@ class Rubilicious
 
     ret << '</xbel>'
     ret.join("\n")
+  end
+
+  def user_tags(user)
+    was_subscribed = true
+    ret = []
+
+    # unless we already subscribed, subscribe to user
+    unless subs.keys.include?(user)
+      sub(user)
+      was_subscribed = false
+    end
+    
+    # grab list of user's posts
+    inbox_dates.each do |date|
+      ret += inbox(date).find_all { |post| post['user'] == user }
+    end
+
+    # unsubscribe from user unless we were already subscribed
+    unsub(user) unless was_subscribed
+
+    # return list of user's posts
+    ret
   end
 
   # convenience aliases
