@@ -67,3 +67,6 @@
     rubilicious installs to work without code muckery.  You can also set
     the RUBILICIOUS_BASE_URI environment variable (if it's not set, then
     Rubilicious#base_uri defaults to 'http://del.icio.us/api'
+
+* Sat Nov 27 13:03:57 2004, pabs <pabs@pablotron.org>
+  * README: updated the last updated date :D
