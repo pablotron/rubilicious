@@ -37,6 +37,7 @@
 # load required libraries
 require 'cgi'
 require 'uri'
+require 'time'
 require 'net/http'
 require 'rexml/document'
 
@@ -174,7 +175,7 @@ class Rubilicious
   attr_reader :user
   attr_accessor :use_proxy, :base_uri
 
-  VERSION = '0.1.3'
+  VERSION = '0.1.4'
 
   #
   # get the HTTP proxy server and port from the environment
@@ -259,7 +260,14 @@ class Rubilicious
   # This method is private.
   #
   def get(url, elem = nil)
+    # check last request time, if it was too recent, then wait
+    sleep 1.0 if @last_request && (Time.now.to_i - @last_request) < 1
+    @last_request = Time.now.to_i
+    
+    # get result and parse it
     ret = REXML::Document.new(http_get(url))
+    
+    # if we got something, then parse it
     if elem
       ary = []
       ret.root.elements.each("//#{elem}") do |e|
@@ -269,6 +277,8 @@ class Rubilicious
       end
       ret = ary
     end
+
+    # return result
     ret
   end
 
@@ -419,6 +429,21 @@ class Rubilicious
   end
 
   #
+  # Delete a link from Delicious.
+  #
+  # Raises an exception on error.
+  #
+  # Example:
+  #   # delete a link to example.com from delicious
+  #   r.delete('http://example.com/')
+  #
+  def delete(url)
+    raise "Missing URL" unless url
+    get('posts/delete?' << url.escape_uri)
+    nil
+  end
+
+  #
   # Renames tags across all posts.
   #
   # Note: Delicious has currently disabled this feature, so it will not
@@ -525,16 +550,24 @@ class Rubilicious
   end
 
   #
+  # Return the last update time.
+  #
+  # Note: this method should be used before calling methods like .posts
+  # or .all to conserve on bandwidth.
+  # 
+  # Example:
+  #  t = r.update  #=> "Fri Mar 11 02:45:51 EST 2005"
+  #
+  def update
+    Time::xmlschema(get('posts/update', 'update')[0]['time'])
+  end
+
+  #
   # Return an array of all your posts ever, optionally filtered by tag.
   #
   #
-  # WARNING: This method can generate a large number of requests to 
-  # del.icio.us, and could be construed as abuse.  Use sparingly, and at
-  # your own risk.
-  #
-  # Note: Use Array#to_xbel on the results from Rubilicious#posts or
-  # Rubilicious#recent instead in order to avoid the caveats mentioned
-  # above.
+  # WARNING: This method can generate a large request to del.icio.us,
+  # and should be used sparingly, and at your own risk.
   #
   # Raises an exception on error.
   #
@@ -548,7 +581,8 @@ class Rubilicious
   #   end
   #
   def all(tag = nil)
-    dates(tag).keys.inject([]) { |ret, dt| ret.concat(posts(dt, tag)); ret }
+    args = [(tag ? "tag=#{tag.uri_escape}" : nil)]
+    get('posts/all?' << args.compact.join('&amp;'), 'tag')
   end
 
   #

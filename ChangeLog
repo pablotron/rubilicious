@@ -70,3 +70,11 @@
 
 * Sat Nov 27 13:03:57 2004, pabs <pabs@pablotron.org>
   * README: updated the last updated date :D
+
+* Fri Mar 11 02:53:17 2005, pabs <pabs@pablotron.org>
+  * rubilicious.rb: applied #delete patch from Nobuhiro IMAI
+    <nov@yo.rim.or.jp>                                                
+  * rubilicious.rb: use built-in delicious add method
+  * rubilicious.rb: add support for #update
+  * rubilicious.rb: add mandatory 1-second delay between calls (as per
+    the API documentation's request)
