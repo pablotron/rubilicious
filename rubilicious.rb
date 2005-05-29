@@ -177,6 +177,9 @@ class Rubilicious
 
   VERSION = '0.1.5'
 
+  # list of environment variables to check for HTTP proxy
+  PROXY_ENV_VARS = %w{RUBILICIOUS_HTTP_PROXY HTTP_PROXY http_proxy}
+
   #
   # get the HTTP proxy server and port from the environment
   # Returns [nil, nil] if a proxy is not set
@@ -212,12 +215,21 @@ class Rubilicious
             # ret['no_proxy'] = np.gsub(/;/, ',') if np && np.length > 0
           end
         end
-        
-        ret
       else
         # handle UNIX systems
-        ENV['http_proxy'].sub('http://','').split(':') if ENV['http_proxy']
+        PROXY_ENV_VARS.each do |env_var|
+          if ENV[env_var]
+            # if we found a proxy, then parse it
+            ret = ENV[env_var].sub(/^http:\/\/([^\/]+)\/?$/, '\1').split(':')
+            ret[1] = ret[1].to_i if ret[1]
+            break
+          end
+        end
+        # $stderr.puts "DEBUG: http_proxy = #{ENV['http_proxy']}, ret = [#{ret.join(',')}]"
       end
+    else 
+      # proxy is disabled
+      ret = [nil, nil]
     end
 
     # return host and port
@@ -232,6 +244,7 @@ class Rubilicious
   def http_get(url)
     # get proxy info
     proxy_host, proxy_port = find_http_proxy
+    # $stderr.puts "DEBUG: proxy: host = #{proxy_host}, port = #{proxy_port}"
 
     # get host, port, and base URI for API queries
     uri = URI::parse(@base_uri)
@@ -241,8 +254,7 @@ class Rubilicious
     url = "#{base}/#{url}"
 
     # connect to delicious
-    http = Net::HTTP.new(uri.host, uri.port, proxy_host, proxy_port)
-    http.start
+    http = Net::HTTP.Proxy(proxy_host, proxy_port).new(uri.host, uri.port).start
 
     # get URL, check for error
     resp = http.get(url, @headers)

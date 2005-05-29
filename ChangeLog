@@ -91,3 +91,6 @@
   * README: increment versoin to 0.1.5
   * rubilicious.rb: ditto
   * rubilicious.gemspec: ditto
+
+* Sun May 29 19:57:36 2005, pabs <pabs@pablotron.org>
+  * rubilicious.rb: fix friggin HTTP proxy support (Fixes: [21])
