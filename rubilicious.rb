@@ -175,7 +175,7 @@ class Rubilicious
   attr_reader :user
   attr_accessor :use_proxy, :base_uri
 
-  VERSION = '0.1.4'
+  VERSION = '0.1.5'
 
   #
   # get the HTTP proxy server and port from the environment

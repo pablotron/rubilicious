@@ -85,3 +85,9 @@
 
 * Fri Mar 11 02:59:50 2005, pabs <pabs@pablotron.org>
   * releasing 0.1.4
+
+* Sun May 29 19:31:03 2005, pabs <pabs@pablotron.org>
+  * README: add note about bugs.p.o
+  * README: increment versoin to 0.1.5
+  * rubilicious.rb: ditto
+  * rubilicious.gemspec: ditto
