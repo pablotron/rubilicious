@@ -105,3 +105,9 @@
 
 * Sun May 29 20:10:53 2005, pabs <pabs@pablotron.org>
   * ChangeLog: don't forget to note whichb ug was fixed!
+
+* Sun May 29 21:01:12 2005, pabs <pabs@pablotron.org>
+  * rubilicious.rb: add Rubilicious#update
+  * rubilicious.rb: fix Rubilicious#all (Fixes: #22)
+  * rubilicious.rb: add support for tag bundles (Rubilicious#bundles,
+    Rubilicious#set_bundle, and Rubilicious#delete_bundle)

@@ -409,6 +409,22 @@ class Rubilicious
   end
 
   #
+  # Return the last update time for this user.
+  #
+  # Note: this method _must_ be called before you call Rubilicious#all.
+  #
+  # Raises an exception on error.
+  # 
+  # Example:
+  #   # get the last update time for this user
+  #   update_time = r.update
+  #   
+  def update
+    e = get('posts/update')
+    Time::from_iso8601(e['time'])
+  end
+
+  #
   # Post a link to delicious, along with an optional extended
   # description, tags (as a space-delimited list), and a timestamp.
   #
@@ -577,6 +593,9 @@ class Rubilicious
   #
   # Return an array of all your posts ever, optionally filtered by tag.
   #
+  # Note: you should check the last update time with Rubilicious#update
+  # to see when the last post was made (ie, if calling this is even
+  # necessary).
   #
   # WARNING: This method can generate a large request to del.icio.us,
   # and should be used sparingly, and at your own risk.
@@ -594,7 +613,57 @@ class Rubilicious
   #
   def all(tag = nil)
     args = [(tag ? "tag=#{tag.uri_escape}" : nil)]
-    get('posts/all?' << args.compact.join('&amp;'), 'tag')
+    get('posts/all?' << args.compact.join('&amp;'), 'post').map do |e|
+      e['time'] = Time::from_iso8601(e['time'])
+      e['tag'] = e['tag'].split(/\s/)
+    end
+  end
+
+  #
+  # Return an array of tag bundles.
+  #
+  # Raises an exception on error.
+  #
+  # Example:
+  #   # get a list of tag bundles
+  #   bundles = r.bundles
+  #
+  def bundles
+    get('tags/bundles/all', 'bundle')
+    get('tags/bundles/all', 'bundle').inject({}) do |ret, e|
+      ret[e['name']] = e['tags'].split(/\s/)
+      ret
+    end
+  end
+
+  #
+  # Set (create or replace) a tag bundle.
+  #
+  # Raises an exception on error.
+  #
+  # Example:
+  #   # set the tags for the tag bundle 'testbundle' to 'ruby programming'.
+  #   r.set_bundle('testbundle', 'ruby programming)
+  #
+  def set_bundle(bundle, tags)
+    args = ["bundle=#{bundle.uri_escape}", "tags=#{tags.uri_escape}"]
+    get('tags/bundles/set?' << args.join('&amp;'))
+    nil
+  end
+
+  #
+  # Delete a tag bundle.
+  #
+  # Raises an exception on error.
+  #
+  # Example:
+  #   # delete the tag bundle 'testbundle'
+  #   r.delete_bundle('testbundle')
+  #
+  def delete_bundle(bundle)
+    args = ["bundle=#{bundle.uri_escape}"]
+    get('tags/bundles/delete?' << args.join('&amp;'))
+    nil
   end
 
   #
@@ -706,4 +775,5 @@ class Rubilicious
   alias :subscribe :sub
   alias :unsubscribe :unsub
   alias :all_posts :all
+  alias :all_bundles :bundles
 end
