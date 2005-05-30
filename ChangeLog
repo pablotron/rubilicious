@@ -132,3 +132,6 @@
 	* rubilicious.rb: removed shebang (as per Nobuhiro's request)
 	* rubilicious.rb: incremented version to 0.1.6
 	* README: ditto
+
+* Sun May 29 22:37:21 2005, pabs <pabs@pablotron.org>
+  * rubilicious.gemspec: increment versoin to 0.1.6
