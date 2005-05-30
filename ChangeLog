@@ -123,3 +123,6 @@
 
 * Sun May 29 21:27:20 2005, pabs <pabs@pablotron.org>
   * rubilicious.gemspec: 'www.' => ''
+
+* Sun May 29 21:28:39 2005, pabs <pabs@pablotron.org>
+  * releasing 0.1.5
