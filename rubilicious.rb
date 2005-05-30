@@ -451,7 +451,7 @@ class Rubilicious
   #
   def delete(url)
     raise "Missing URL" unless url
-    get('posts/delete?' << url.escape_uri)
+    get('posts/delete?uri=' << url.uri_escape)
     nil
   end
 

@@ -93,4 +93,8 @@
   * rubilicious.gemspec: ditto
 
 * Sun May 29 19:57:36 2005, pabs <pabs@pablotron.org>
-  * rubilicious.rb: fix friggin HTTP proxy support (Fixes: [21])
+  * rubilicious.rb: fix friggin HTTP proxy support (Fixes: #21)
+
+* Sun May 29 20:01:29 2005, pabs <pabs@pablotron.org>
+  * rubilicious.rb: fix Rubilicious#delete (reported by Ruben Laguna 
+    Fixes: #23)
