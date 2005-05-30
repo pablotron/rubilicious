@@ -37,6 +37,6 @@ spec = Gem::Specification.new do |s|
 
   s.author = 'Paul Duncan'
   s.email = 'pabs@pablotron.org'
-  s.homepage = 'http://www.pablotron.org/software/rubilicious/'
+  s.homepage = 'http://pablotron.org/software/rubilicious/'
   s.rubyforge_project = 'rubilicious'
 end

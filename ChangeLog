@@ -120,3 +120,6 @@
   * rubilicious.rb: del.icio.us => Delicious (except in URLs)
   * rubilicious.rb: copyright year update
   * COPYING: ditto
+
+* Sun May 29 21:27:20 2005, pabs <pabs@pablotron.org>
+  * rubilicious.gemspec: 'www.' => ''
