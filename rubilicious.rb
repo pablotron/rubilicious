@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 #######################################################################
 # Rubilicious - Delicious (http://del.icio.us/) bindings for Ruby.    #
 # by Paul Duncan <pabs@pablotron.org>                                 #
@@ -175,7 +173,7 @@ class Rubilicious
   attr_reader :user
   attr_accessor :use_proxy, :base_uri
 
-  VERSION = '0.1.5'
+  VERSION = '0.1.6'
 
   # list of environment variables to check for HTTP proxy
   PROXY_ENV_VARS = %w{RUBILICIOUS_HTTP_PROXY HTTP_PROXY http_proxy}
