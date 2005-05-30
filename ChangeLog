@@ -111,3 +111,6 @@
   * rubilicious.rb: fix Rubilicious#all (Fixes: #22)
   * rubilicious.rb: add support for tag bundles (Rubilicious#bundles,
     Rubilicious#set_bundle, and Rubilicious#delete_bundle)
+
+* Sun May 29 21:12:16 2005, pabs <pabs@pablotron.org>
+  * rubilicious.rb: add opt parameter to Rubilicious::new

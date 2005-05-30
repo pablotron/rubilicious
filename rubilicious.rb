@@ -307,12 +307,23 @@ class Rubilicious
   # Example:
   #   r = Rubilicious.new('pabs', 'password')
   #
-  def initialize(user, pass)
+  def initialize(user, pass, opt = {})
     @user, @use_proxy = user, true
-    @base_uri = ENV['RUBILICIOUS_BASE_URI'] || 'http://del.icio.us/api'
+
+    # set use proxy
+    @use_proxy = opt['use_proxy'] if opt.key?('use_proxy')
+
+    # set API URL (note that this can be changed by the user later)
+    @base_uri = opt['base_uri'] || 
+                ENV['RUBILICIOUS_BASE_URI'] || 
+                'http://del.icio.us/api'
+
+    # set user agent string
+    user_agent = opt['user_agent'] ||
+                 "Rubilicious/#{Rubilicious::VERSION} Ruby/#{RUBY_VERSION}"
     @headers = {
       'Authorization'   => 'Basic ' << ["#{user}:#{pass}"].pack('m').strip,
-      'User-Agent'      => "Rubilicious/#{Rubilicious::VERSION} Ruby/#{RUBY_VERSION}"
+      'User-Agent'      => user_agent,
     }
   end
 
