@@ -101,4 +101,7 @@
 
 * Sun May 29 20:06:11 2005, pabs <pabs@pablotron.org>
   * examples/add_link.rb: fix bugs reported by Jon on Rubilicious
-    project page (http://pablotron.org/software/rubilicious/)
+    project page (http://pablotron.org/software/rubilicious/) (Fixes: #24)
+
+* Sun May 29 20:10:53 2005, pabs <pabs@pablotron.org>
+  * ChangeLog: don't forget to note whichb ug was fixed!
