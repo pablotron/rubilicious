@@ -3,8 +3,8 @@
 require 'rubilicious'
 
 # check command-line arguments
-if ARGV < 4
-  $stderr.puts "Usage: $0 [user] [pass] [url] [title] <desc> <tags>"
+if ARGV.size < 4
+  $stderr.puts "Usage: #$0 [user] [pass] [url] [title] <desc> <tags>"
 end
 
 # grab command-line arguments
