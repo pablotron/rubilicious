@@ -1,15 +1,15 @@
 #!/usr/bin/env ruby
 
 #######################################################################
-# Rubilicious - Delicious (http://del.icio.us/) bindings for Ruby     #
+# Rubilicious - Delicious (http://del.icio.us/) bindings for Ruby.    #
 # by Paul Duncan <pabs@pablotron.org>                                 #
 #                                                                     #
 #                                                                     #
 # For the latest version of this software, Please see the Rubilicious #
-# page at http://www.pablotron.org/software/rubilicious/.             #
+# page at http://pablotron.org/software/rubilicious/.                 #
 #                                                                     #
 #                                                                     #
-# Copyright (C)  2004 Paul Duncan.                                    #
+# Copyright (C)  2004, 2005 Paul Duncan (pabs@pablotron.org).         #
 #                                                                     #
 # Permission is hereby granted, free of charge, to any person         #
 # obtaining a copy of this software and associated documentation      #
@@ -102,7 +102,7 @@ class Array
     ret = [ "<?xml version='1.0' encoding='utf-8'?>",
             "<xbel version='1.0' added='#{Time::now.to_iso8601}'>",
             # "<xbel version='1.0'>",
-            "  <title>#{@user}'s del.icio.us bookmarks</title>" ]
+            "  <title>#{@user}'s Delicious Bookmarks</title>" ]
   
     # find all bookmarks in list with given tag and sort tag
     tags = find_all { |e| !tag || e['tags'].include?(tag) }.inject({}) do |tags, bm|
@@ -266,7 +266,7 @@ class Rubilicious
   end
 
   #
-  # Get url from del.icio.us, and optionally parse result and return as
+  # Get url from Delicious, and optionally parse result and return as
   # an array of hashes as well.
   #
   # This method is private.
@@ -299,13 +299,27 @@ class Rubilicious
 
 
   #
-  # Connect to del.icio.us with username 'user' and password 'pass'.
-  # 
+  # Connect to Delicious with username 'user' and password 'pass'.
+  #
   # Note: if the username or password is incorrect, Rubilicious will not
   # raise an exception until you make an actual call.
+  # 
+  # Rubilicious also accepts several optional parameters in the opt
+  # Hash.  Here's a list of the supported keys:
   #
-  # Example:
+  # * use_proxy: Check for HTTP proxy environment variables, and use
+  #   HTTP proxy if any are set. (default: true)
+  # * base_uri: URI to Delicious API.  Best not to touch this one unless
+  #   you know what you're doing. (default: 'http://del.icio.us/api')
+  # * user_agent: User Agent string to pass to Delicious in each HTTP
+  #   request. (default: 'Rubilicious/VERSION Ruby/VERSION')
+  #
+  # Examples:
+  #   # connect to delicious with as 'pabs' with the password 'password'
   #   r = Rubilicious.new('pabs', 'password')
+  # 
+  #   # connect to delicious, but never check for an HTTP proxy
+  #   r = Rubilicious.new('pabs', 'password', {'use_proxy' => false})
   #
   def initialize(user, pass, opt = {})
     @user, @use_proxy = user, true
@@ -608,7 +622,7 @@ class Rubilicious
   # to see when the last post was made (ie, if calling this is even
   # necessary).
   #
-  # WARNING: This method can generate a large request to del.icio.us,
+  # WARNING: This method can generate a large request to Delicious,
   # and should be used sparingly, and at your own risk.
   #
   # Raises an exception on error.
@@ -681,7 +695,7 @@ class Rubilicious
   # Return an XBEL string of all your posts, optionally filtered by tag.
   #
   # WARNING: This method can generate a large number of requests to 
-  # del.icio.us, and could be construed as abuse.  Use sparingly, and at
+  # Delicious, and could be construed as abuse.  Use sparingly, and at
   # your own risk.
   #
   # Raises an exception on error.
@@ -696,7 +710,7 @@ class Rubilicious
     ret = [ "<?xml version='1.0' encoding='utf-8'?>",
             "<xbel version='1.0' added='#{Time::now.to_iso8601}'>",
             # "<xbel version='1.0'>",
-            "  <title>#{@user}'s del.icio.us bookmarks</title>" ]
+            "  <title>#{@user}'s Delicious Bookmarks</title>" ]
   
     tags = all(tag).inject({}) do |tags, bm|
       if bm['tags'] && bm['tags'].size > 0
@@ -744,7 +758,7 @@ class Rubilicious
   # Return all of a user's posts, optionally filtered by tag.
   #
   # WARNING: This method can generate a large number of requests to 
-  # del.icio.us, and could be construed as abuse.  Use sparingly, and at
+  # Delicious, and could be construed as abuse.  Use sparingly, and at
   # your own risk.
   #
   # Raises an exception on error.
