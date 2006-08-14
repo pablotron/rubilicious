@@ -7,7 +7,7 @@
 # page at http://pablotron.org/software/rubilicious/.                 #
 #                                                                     #
 #                                                                     #
-# Copyright (C)  2004, 2005 Paul Duncan (pabs@pablotron.org).         #
+# Copyright (C)  2004-2006 Paul Duncan (pabs@pablotron.org).          #
 #                                                                     #
 # Permission is hereby granted, free of charge, to any person         #
 # obtaining a copy of this software and associated documentation      #
@@ -170,10 +170,39 @@ end
 #   end
 #
 class Rubilicious
+  class Error < StandardError; end
+
   attr_reader :user
   attr_accessor :use_proxy, :base_uri
 
-  VERSION = '0.1.6'
+  VERSION = '0.2.0-pre'
+  
+  # check for https support (requires OpenSSL)
+  HAVE_SSL = begin
+    require 'net/https'
+
+    def self.map_ssl_attr(str)
+      'ssl_' << [/^ssl_/, /=$/].inject(str) { |ret, re| ret.gsub(re, '') }
+    end
+
+    SSL_ATTR_REGEX = /^(ssl|ca|cert|verify).*=$/
+    SSL_ATTRS = Net::HTTP.instance_methods.grep(SSL_ATTR_REGEX)
+    SSL_IVARS = SSL_ATTRS.map { |str| map_ssl_attr(str) }
+
+    accessors = SSL_IVARS.each { |str| attr_accessor str.intern }
+    attr_accessor *accessors
+
+    def set_http_ssl_attrs(http)
+      SSL_ATTRS.each do |str|
+        val = send(Rubilicious.map_ssl_attr(str).intern)
+        http.send(str.intern, val) if val
+      end
+    end
+
+    true
+  rescue LoadError
+    false
+  end
 
   # list of environment variables to check for HTTP proxy
   PROXY_ENV_VARS = %w{RUBILICIOUS_HTTP_PROXY HTTP_PROXY http_proxy}
@@ -252,11 +281,22 @@ class Rubilicious
     url = "#{base}/#{url}"
 
     # connect to delicious
-    http = Net::HTTP.Proxy(proxy_host, proxy_port).new(uri.host, uri.port).start
+    http = Net::HTTP.Proxy(proxy_host, proxy_port).new(uri.host, uri.port)
+
+    if uri.scheme == 'https'
+      # check to make sure we have SSL support
+      raise Error, "Unsupported URI scheme 'https'" unless HAVE_SSL
+      http.use_ssl = true
+      # http.verify_mode = @ssl_verify_mode
+      set_http_ssl_attrs(http)
+    end
+
+    # start HTTP connection
+    http = http.start
 
     # get URL, check for error
     resp = http.get(url, @headers)
-    raise "HTTP #{resp.code}: #{resp.message}" unless resp.code =~ /2\d{2}/
+    raise Error, "HTTP #{resp.code}: #{resp.message}" unless resp.code =~ /2\d{2}/
 
     # close HTTP connection, return response
     http.finish
@@ -328,11 +368,21 @@ class Rubilicious
     # set API URL (note that this can be changed by the user later)
     @base_uri = opt['base_uri'] || 
                 ENV['RUBILICIOUS_BASE_URI'] || 
-                'http://del.icio.us/api'
+                'https://api.del.icio.us/v1'
+
+    # if we have SSL support, then set the SSL verify mode
+    # (defaults to VERIFY_NONE, which is horribly insecure)
+    if HAVE_SSL
+      # set the verify mode to a reasonable default
+      @ssl_verify_mode = OpenSSL::SSL::VERIFY_NONE
+      SSL_IVARS.each { |str| send("#{str}=".intern, opt[str]) if opt[str] }
+    end
 
     # set user agent string
     user_agent = opt['user_agent'] ||
                  "Rubilicious/#{Rubilicious::VERSION} Ruby/#{RUBY_VERSION}"
+
+    # build default HTTP headers
     @headers = {
       'Authorization'   => 'Basic ' << ["#{user}:#{pass}"].pack('m').strip,
       'User-Agent'      => user_agent,
@@ -468,8 +518,8 @@ class Rubilicious
   #         'rss programming ruby console xml')
   #
   def add(url, desc, ext = '', tags = '', time = Time.now)
-    raise "Missing URL" unless url
-    raise "Missing Description" unless desc
+    raise Error, "Missing URL" unless url
+    raise Error, "Missing Description" unless desc
     args = [
       ("url=#{url.uri_escape}"), ("description=#{desc.uri_escape}"),
       (ext ? "extended=#{ext.uri_escape}" : nil),
@@ -489,7 +539,7 @@ class Rubilicious
   #   r.delete('http://example.com/')
   #
   def delete(url)
-    raise "Missing URL" unless url
+    raise Error, "Missing URL" unless url
     get('posts/delete?uri=' << url.uri_escape)
     nil
   end
@@ -578,7 +628,7 @@ class Rubilicious
   #   r.sub('solarce', 'humor')
   #
   def sub(user, tag = nil)
-    raise "Missing user" unless user
+    raise Error, "Missing user" unless user
     args = ["user=#{user.uri_escape}", (tag ? "tag=#{tag.uri_escape}" : nil)]
     get('inbox/sub?' << args.compact.join('&amp;'), 'post')
     nil
@@ -594,7 +644,7 @@ class Rubilicious
   #   r.unsub('giblet')
   #
   def unsub(user, tag = nil)
-    raise "Missing user" unless user
+    raise Error, "Missing user" unless user
     args = ["user=#{user}", (tag ? "tag=#{tag}" : nil)]
     get('inbox/unsub?' << args.compact.join('&amp;'))
     nil

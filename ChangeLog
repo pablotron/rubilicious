@@ -135,3 +135,9 @@
 
 * Sun May 29 22:37:21 2005, pabs <pabs@pablotron.org>
   * rubilicious.gemspec: increment versoin to 0.1.6
+
+* Sun Aug 13 23:04:22 2006, pabs <pabs@pablotron.org>
+  * rubilicious.rb: updated copyright
+  * README: same
+  * COPYING: same
+  * rubilicious.rb: preliminary delicious SSL api support
