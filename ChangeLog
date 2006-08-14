@@ -141,3 +141,8 @@
   * README: same
   * COPYING: same
   * rubilicious.rb: preliminary delicious SSL api support
+
+* Mon Aug 14 02:43:12 2006, pabs <pabs@pablotron.org>
+  * rubilicious.gemspec: bump version to 0.2.0
+  * rubilicious.rb: same
+

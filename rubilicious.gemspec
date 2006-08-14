@@ -5,7 +5,7 @@ spec = Gem::Specification.new do |s|
   #### Basic information.
 
   s.name = 'Rubilicious'
-  s.version = '0.1.6'
+  s.version = '0.2.0'
   s.summary = <<-EOF
     Delicious (http://del.icio.us/) bindings for Ruby.
   EOF
