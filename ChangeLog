@@ -166,3 +166,11 @@
   * rubilicious.rb: fix Rubilicious#h so it actually does something
   * rubilicious.rb: convert timestamps to GMT first (the delicious API
     only supports ISO-8601 timestamps in GMT)
+
+* Fri Sep  1 00:35:55 EDT 2006, Paul Duncan <pabs@pablotron.org>
+  * README: added Installation section (just covers rubygems at the
+    moment, but I should have a note about the debian package, too)
+  * rubilicious.rb: update version to 0.2.0
+  * examples/add_link.rb: exit without proper cli args
+  * examples/del_to_xbel.rb: use Rubilicious.to_xbel() instead of
+    old Array#to_xbel

@@ -1,7 +1,7 @@
-Rubilicious 0.1.6 README
+Rubilicious 0.2.0 README
 ========================
 
-This document was last updated on Sun May 29 19:30:00 2005.  Please see
+This document was last updated on Fri Sep 01 00:29:07 2006.  Please see
 the file COPYING for licensing and warranty information.  Visit
 http://pablotron.org/software/rubilicious/ for the latest version of
 this software.
@@ -19,6 +19,14 @@ Requirements
 ============
 * Ruby (http://www.ruby-lang.org/), version 1.8.0 (or newer).
 
+Installation
+============
+The easiest way to install Rubilicious is via RubyGems
+(http://rubygems.org/).  If you've got it installed, it's as simple as 
+this:
+
+  # install rubilicious using rubygems
+  sudo gem install rubilicious
 
 Reporting Bugs
 ==============

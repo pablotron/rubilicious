@@ -5,6 +5,7 @@ require 'rubilicious'
 # check command-line arguments
 if ARGV.size < 4
   $stderr.puts "Usage: #$0 [user] [pass] [url] [title] <desc> <tags>"
+  exit -1
 end
 
 # grab command-line arguments

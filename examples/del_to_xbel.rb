@@ -18,5 +18,5 @@ File::open(path, 'w') do |file|
   r = Rubilicious.new(user, pass)
   
   # save recent entries to output file
-  file.puts r.recent.to_xbel
+  file.puts Rubilicious.to_xbel(r.recent)
 end

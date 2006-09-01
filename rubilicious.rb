@@ -155,7 +155,7 @@ class Rubilicious
   attr_reader :user
   attr_accessor :use_proxy, :base_uri
 
-  VERSION = '0.2.0-pre'
+  VERSION = '0.2.0'
   
   # check for https support (requires OpenSSL)
   HAVE_SSL = begin
