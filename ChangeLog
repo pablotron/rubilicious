@@ -174,3 +174,10 @@
   * examples/add_link.rb: exit without proper cli args
   * examples/del_to_xbel.rb: use Rubilicious.to_xbel() instead of
     old Array#to_xbel
+
+* Fri Sep  1 01:17:58 EDT 2006, Paul Duncan <pabs@pablotron.org>
+  * rubilicious.rb: added Rubilicious::NoSSLError
+  * rubilicious.rb: added documentation for error classes
+  * rubilicious.rb: added documentation for Rubilicious::Extras
+  * rubilicious.rb: renamed set_http_ssl_attrs to init_http_ssl
+  * rubilicious.rb: misc documentation corrections

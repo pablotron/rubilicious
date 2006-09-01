@@ -56,33 +56,122 @@ require 'rexml/document'
 #   r.add('http://pablotron.org/', 'Pablotron.org')
 #
 #   # save recent funny posts to an XBEL file
-#   File::open('funny_links.xbel', 'w') do |file|
-#     file.puts r.recent('funny').to_xbel
+#   File.open('funny_links.xbel', 'w') do |file|
+#     file.puts Rubilicious.to_xbel(r.recent('funny'))
 #   end
 #
 class Rubilicious
+  #
+  # Base Rubilicious Error class.
+  #
   class Error < StandardError; end
+
+  #
+  # Wrapper for HTTP-related Rubilicious errors.
+  #
   class HTTPError < Error; end
 
-  module StringExtras
-    #
-    # Escape XML-special characters in string.
-    #
-    def xml_escape
-      CGI.escapeHTML(self)
+  #
+  # Raised if an application attempts to connect to an https resource
+  # without OpenSSL support. 
+  #
+  class NoSSLError < Error; end
+
+  # 
+  # Module containing methods to maintain compatability with methods
+  # from Rubilicious 0.1.x.
+  # 
+  # Note: These methods are deprecated and may be removed from a future
+  # version of Rubilicious.
+  # 
+  # If you have an application that depends on the old 0.1-style
+  # methods added by Rubilicious -- String#uri_escape,
+  # Array#to_xbel, etc -- you can do one of the following:
+  #
+  # 1.  Add a call to Rubilicious::Extras.include_extras before calling
+  #     any of the old-style methods.
+  # 2.  Include one of the Extra classes piecemeal.  For example, if
+  #     your application depends on Array#to_xbel, the following code
+  #     will add Array#to_xbel:
+  #     
+  #       class Array
+  #         include Rubilicious::Extras::Array
+  #       end
+  #     
+  # 3.  Fix your code.  Each of the old-style calls maps to either a new
+  #     non-toplevel method or a Ruby built-in method.  For example,
+  #     Array#to_xbel can be replaced by Rubilicious.to_xbel(ary), and
+  #     String#xml_escape can be replaced by CGI.escapeHTML(str).
+  #
+  module Extras
+    # 
+    # Module containing methods to maintain compatability with methods
+    # added to the top-level String class in Rubilicious 0.1.x.
+    # 
+    # Note: These methods are deprecated and may be removed from a future
+    # version of Rubilicious.
+    # 
+    module String
+      #
+      # Escape XML-special characters in string.
+      #
+      # Note: this method is deprecated and may be removed from a future
+      # version of Rubilicious.
+      #
+      def xml_escape
+        CGI.escapeHTML(self)
+      end
+    
+      #
+      # XML escape elements, including spaces, ?, and +
+      #
+      def uri_escape
+        CGI.escape(self)
+      end
     end
   
-    #
-    # XML escape elements, including spaces, ?, and +
-    #
-    def uri_escape
-      CGI.escape(self)
+    # 
+    # Module containing methods to maintain compatability with methods
+    # added to the top-level Array class in Rubilicious 0.1.x.
+    # 
+    # Note: These methods are deprecated and may be removed from a future
+    # version of Rubilicious.
+    # 
+    module Array
+      def to_xbel(tag = nil)
+        Rubilicious.to_xbel(self, tag)
+      end
     end
-  end
-  
-  module ArrayExtras
-    def to_xbel(tag = nil)
-      Rubilicious.to_xbel(self, tag)
+
+    # 
+    # Module containing methods to maintain compatability with methods
+    # added to the top-level Time class in Rubilicious 0.1.x.
+    # 
+    # Note: These methods are deprecated and may be removed from a future
+    # version of Rubilicious.
+    # 
+    module Time
+      def self.from_iso8601(str)
+        ::Time.iso8601(str)
+      end
+
+      def to_iso8601
+        gmtime.iso8601
+      end
+    end
+
+    #
+    # Add old Rubilicious 0.1.x-style String, Array, and Time methods to
+    # the environment.
+    #
+    # This method is only to maintain source compatability with
+    # Rubilicious 0.1.x-style applications and should not be used in
+    # newer code.
+    #
+    def self.include_extras
+      self.constants.each do |c|
+        Kernel.const_get(c).class_eval { include Extras.const_get(c) }
+      end
     end
   end
       
@@ -95,9 +184,12 @@ class Rubilicious
   # Raises an exception on error.
   #
   # Example:
-  #   results = r.recent             # grab all recent posts
-  #   File::open('output.xbel', 'w') do |file|
-  #     file.puts results.to_xbel    # save results to file
+  #   File.open('output.xbel', 'w') do |file|
+  #     # grab all recent posts
+  #     results = r.recent
+  #
+  #     # save results to file
+  #     file.puts Rubilicous.to_xbel(results)
   #   end
   #
   def self.to_xbel(src_ary, tag = nil)
@@ -172,7 +264,9 @@ class Rubilicious
     accessors = SSL_IVARS.each { |str| attr_accessor str.intern }
     attr_accessor *accessors
 
-    def set_http_ssl_attrs(http)
+    def init_http_ssl(http)
+      http.use_ssl = true
+
       SSL_ATTRS.each do |str|
         val = send(Rubilicious.map_ssl_attr(str).intern)
         http.send(str.intern, val) if val
@@ -267,10 +361,8 @@ class Rubilicious
 
     if uri.scheme == 'https'
       # check to make sure we have SSL support
-      raise Error, "Unsupported URI scheme 'https'" unless HAVE_SSL
-      http.use_ssl = true
-      # http.verify_mode = @ssl_verify_mode
-      set_http_ssl_attrs(http)
+      raise NoSSLError, "Unsupported URI scheme 'https'" unless HAVE_SSL
+      init_http_ssl(http)
     end
 
     # start HTTP connection
@@ -342,7 +434,7 @@ class Rubilicious
   # * use_proxy: Check for HTTP proxy environment variables, and use
   #   HTTP proxy if any are set. (default: true)
   # * base_uri: URI to Delicious API.  Best not to touch this one unless
-  #   you know what you're doing. (default: 'http://del.icio.us/api')
+  #   you know what you're doing. (default: 'https://api.del.icio.us/v1')
   # * user_agent: User Agent string to pass to Delicious in each HTTP
   #   request. (default: 'Rubilicious/VERSION Ruby/VERSION')
   #
