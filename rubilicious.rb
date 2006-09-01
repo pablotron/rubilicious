@@ -57,7 +57,7 @@ require 'rexml/document'
 #
 #   # save recent funny posts to an XBEL file
 #   File.open('funny_links.xbel', 'w') do |file|
-#     file.puts Rubilicious.to_xbel(r.recent('funny'))
+#     file.puts Rubilicious.xbel(r.recent('funny'))
 #   end
 #
 class Rubilicious
@@ -100,7 +100,7 @@ class Rubilicious
   #     
   # 3.  Fix your code.  Each of the old-style calls maps to either a new
   #     non-toplevel method or a Ruby built-in method.  For example,
-  #     Array#to_xbel can be replaced by Rubilicious.to_xbel(ary), and
+  #     Array#to_xbel can be replaced by Rubilicious.xbel(ary), and
   #     String#xml_escape can be replaced by CGI.escapeHTML(str).
   #
   module Extras
@@ -139,7 +139,7 @@ class Rubilicious
     # 
     module Array
       def to_xbel(tag = nil)
-        Rubilicious.to_xbel(self, tag)
+        Rubilicious.xbel(self, tag)
       end
     end
 
@@ -179,7 +179,8 @@ class Rubilicious
   # Convert an array of posts (bookmarks) to an XBEL string.
   # 
   # Note: This method is significantly less taxing on Delicious than 
-  # Rubilicious#to_xbel.
+  # Rubilicious#to_xbel, since it acts on an array of posts in memory 
+  # rather than a series of remote calls like it's counterpart.
   #
   # Raises an exception on error.
   #
@@ -189,10 +190,10 @@ class Rubilicious
   #     results = r.recent
   #
   #     # save results to file
-  #     file.puts Rubilicous.to_xbel(results)
+  #     file.puts Rubilicous.xbel(results)
   #   end
   #
-  def self.to_xbel(src_ary, tag = nil)
+  def self.xbel(src_ary, tag = nil)
     ret = [ "<?xml version='1.0' encoding='utf-8'?>",
             "<xbel version='1.0' added='#{Time.now.iso8601}'>",
             "  <title>#{@user}'s Delicious Bookmarks</title>" ]
@@ -750,7 +751,7 @@ class Rubilicious
   #  t = r.update  #=> "Fri Mar 11 02:45:51 EST 2005"
   #
   def update
-    Time::xmlschema(get('posts/update', 'update')[0]['time'])
+    Time.xmlschema(get('posts/update', 'update')[0]['time'])
   end
 
   #
@@ -768,7 +769,7 @@ class Rubilicious
   # Example:
   #   # save all 'art' posts to file "art_posts.txt"
   #   art_posts = r.all('art')
-  #   File::open('art_posts.txt', 'w') do |file|
+  #   File.open('art_posts.txt', 'w') do |file|
   #     file.puts art_posts.sort do |a, b| 
   #       a['time'] <=> b['time'] 
   #     end.map { |post| post['href'] }
@@ -832,6 +833,9 @@ class Rubilicious
   #
   # Return an XBEL string of all your posts, optionally filtered by tag.
   #
+  # Note: This is _not_ the same as calling Rubilicious.xbel.  Please
+  # see the documentation for Rubilicious.xbel for more information.
+  #
   # WARNING: This method can generate a large number of requests to 
   # Delicious, and could be construed as abuse.  Use sparingly, and at
   # your own risk.
@@ -840,7 +844,7 @@ class Rubilicious
   #
   # Example:
   #   # save all posts ever in XBEL format to file "delicious.xbel"
-  #   File::open('delicious.xbel', 'w') do |file|
+  #   File.open('delicious.xbel', 'w') do |file|
   #     file.puts r.to_xbel
   #   end
   #
@@ -905,8 +909,8 @@ class Rubilicious
   # Example:
   #   # save all posts every by 'delineator' to XBEL format to file
   #   # "delineator.xbel"
-  #   File::open('delineator.xbel', 'w') do |file|
-  #     file.puts r.user_posts('delineator').to_xbel
+  #   File.open('delineator.xbel', 'w') do |file|
+  #     file.puts Rubilicious.xbel(r.user_posts('delineator'))
   #   end
   #
   def user_posts(user, tag = nil)

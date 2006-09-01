@@ -181,3 +181,8 @@
   * rubilicious.rb: added documentation for Rubilicious::Extras
   * rubilicious.rb: renamed set_http_ssl_attrs to init_http_ssl
   * rubilicious.rb: misc documentation corrections
+
+* Fri Sep  1 02:57:51 EDT 2006, Paul Duncan <pabs@pablotron.org>
+  * rubilicious.rb: renamed Rubilicious.to_xbel to Rubilicious.xbel
+    (probably a lot less confusing)
+  * examples/del_to_xbel.rb: fancier OOP example

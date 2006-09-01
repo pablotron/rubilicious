@@ -3,20 +3,30 @@
 # load bindings
 require 'rubilicious'
 
-# check command-line arguments
-unless ARGV.size == 3
-  $stderr.puts "Usage: $0 [user] [pass] [output_file]"
-  exit -1
-end
+class XBELDump
+  def initialize(*args)
+    @user, @pass, @io = *args
 
-# get command-line arguments
-user, pass, path = ARGV
+    @is_file = @io && @io != '-'
+    @io = @is_file ? File.open(out_io) : $stdout
+  end
 
-# open output fileC, connect to rubilicious, save 
-File::open(path, 'w') do |file| 
-  # connect to rubilicious
-  r = Rubilicious.new(user, pass)
-  
-  # save recent entries to output file
-  file.puts Rubilicious.to_xbel(r.recent)
+  def run
+    r = Rubilicious.new(@user, @pass)
+    @io.write(Rubilicious.xbel(r.recent))
+    @io.close if @is_file
+  end
+
+  def self.run(args)
+    # check args
+    unless args.size > 1
+      $stderr.puts "Usage: $0 [user] [pass] <output_file>"
+      exit -1
+    end
+
+    # create new instance and run
+    new(*args).run
+  end
 end
+      
+XBELDump.run(*ARGV) if __FILE__ == $0
