@@ -39,115 +39,6 @@ require 'time'
 require 'net/http'
 require 'rexml/document'
 
-class String
-  #
-  # Escape XML-special characters in string.
-  #
-  def xml_escape
-    str = gsub(/&/, '&amp;')
-    str = str.gsub(/</, '&lt;')
-    str = str.gsub(/>/, '&gt;')
-    str = str.gsub(/"/, '&quot;')
-    str
-  end
-
-  #
-  # XML escape elements, including spaces, ?, and +
-  #
-  def uri_escape
-    CGI::escape(self)
-  end
-end
-
-class Time
-  #
-  # Convert from an ISO-8601-format string to a time.
-  # 
-  # Note: if there are more than one results in the string, this method
-  # matches the first one.
-  #
-  def Time::from_iso8601(str)
-    str.scan(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z/) do
-      |yr, mo, dy, hr, mn, sc|
-      return Time::mktime(yr, mo, dy, hr, mn, sc)
-    end
-  end
-
-  #
-  # Convert time to an ISO-8601-format string.
-  #
-  def to_iso8601
-    strftime('%Y-%m-%dT%H:%M:%SZ')
-  end
-end
-
-class Array
-  #
-  # Convert an array of posts (bookmarks) to an XBEL string.
-  # 
-  # Note: This method is significantly less taxing on Delicious than 
-  # Rubilicious#to_xbel.
-  #
-  # Raises an exception on error.
-  #
-  # Example:
-  #   results = r.recent             # grab all recent posts
-  #   File::open('output.xbel', 'w') do |file|
-  #     file.puts results.to_xbel    # save results to file
-  #   end
-  #
-  def to_xbel(tag = nil)
-    ret = [ "<?xml version='1.0' encoding='utf-8'?>",
-            "<xbel version='1.0' added='#{Time::now.to_iso8601}'>",
-            # "<xbel version='1.0'>",
-            "  <title>#{@user}'s Delicious Bookmarks</title>" ]
-  
-    # find all bookmarks in list with given tag and sort tag
-    tags = find_all { |e| !tag || e['tags'].include?(tag) }.inject({}) do |tags, bm|
-      if bm['tags'] && bm['tags'].size > 0
-        bm['tags'] = bm['tags'] ? bm['tags'].split(' ').sort : []
-        # TODO: alias support
-        bm['tags'].each { |tag| tags[tag] ||= []; tags[tag] << bm }
-      else 
-        tags['uncategorized'] ||= []
-        tags['uncategorized'] << bm
-      end
-
-      tags
-    end
-    
-    # print the folders out in order
-    tags.keys.sort.each do |tag|
-      ary = tags[tag]
-      ret <<  [ 
-        "  <folder id='#{tag}' added='#{Time.now.to_iso8601}'>",
-        # "  <folder id='#{tag}'>",
-        "    <title>#{tag.capitalize}</title>",
-
-        ary.sort { |a, b| a['description'] <=> b['description'] }.map do |bm|
-          href, bm_id = bm['href'].uri_escape, "#{tag}-#{bm['hash']}", 
-          time = bm['time'].to_iso8601
-          title = bm['description'] ? bm['description'].xml_escape : ''
-          desc = bm['extended'] ? bm['extended'].xml_escape : ''
-
-          [ "    <bookmark href='#{href}' id='#{bm_id}' added='#{time}'>",
-          # [ "    <bookmark href='#{href}' id='#{bm_id}'>",
-            "      <title>#{title}</title>",
-            "      <desc>#{desc}</desc>",
-            "    </bookmark>" ,
-          ].join("\n")
-        end.join("\n"),
-
-        '  </folder>',
-      ].join("\n")
-    end
-
-    # attach closing tag and return string
-    ret << '</xbel>'
-    ret.join("\n")
-  end
-end
-
 #
 # Rubilicious - Delicious (http://del.icio.us/) bindings for Ruby.
 #
@@ -171,6 +62,95 @@ end
 #
 class Rubilicious
   class Error < StandardError; end
+  class HTTPError < Error; end
+
+  module StringExtras
+    #
+    # Escape XML-special characters in string.
+    #
+    def xml_escape
+      CGI.escapeHTML(self)
+    end
+  
+    #
+    # XML escape elements, including spaces, ?, and +
+    #
+    def uri_escape
+      CGI.escape(self)
+    end
+  end
+  
+  module ArrayExtras
+    def to_xbel(tag = nil)
+      Rubilicious.to_xbel(self, tag)
+    end
+  end
+      
+  #
+  # Convert an array of posts (bookmarks) to an XBEL string.
+  # 
+  # Note: This method is significantly less taxing on Delicious than 
+  # Rubilicious#to_xbel.
+  #
+  # Raises an exception on error.
+  #
+  # Example:
+  #   results = r.recent             # grab all recent posts
+  #   File::open('output.xbel', 'w') do |file|
+  #     file.puts results.to_xbel    # save results to file
+  #   end
+  #
+  def self.to_xbel(src_ary, tag = nil)
+    ret = [ "<?xml version='1.0' encoding='utf-8'?>",
+            "<xbel version='1.0' added='#{Time.now.iso8601}'>",
+            "  <title>#{@user}'s Delicious Bookmarks</title>" ]
+  
+    # find all bookmarks in list with given tag and sort tag
+    tags = src_ary.find_all { |e| 
+      !tag || e['tags'].include?(tag) 
+    }.inject({}) do |tags, bm|
+      if bm['tags'] && bm['tags'].size > 0
+        bm['tags'] = bm['tags'] ? bm['tags'].split(' ').sort : []
+        # TODO: alias support
+        bm['tags'].each { |tag| tags[tag] ||= []; tags[tag] << bm }
+      else 
+        tags['uncategorized'] ||= []
+        tags['uncategorized'] << bm
+      end
+
+      tags
+    end
+    
+    # print the folders out in order
+    tags.keys.sort.each do |tag|
+      ary = tags[tag]
+      ret <<  [ 
+        "  <folder id='#{tag}' added='#{Time.now.iso8601}'>",
+        # "  <folder id='#{tag}'>",
+        "    <title>#{tag.capitalize}</title>",
+
+        ary.sort { |a, b| a['description'] <=> b['description'] }.map do |bm|
+          href, bm_id = CGI.escape(bm['href']), "#{tag}-#{bm['hash']}", 
+          time = bm['time'].iso8601
+          title = CGI.escapeHTML(bm['description'] || '')
+          desc = CGI.escapeHTML(bm['extended'] || '')
+
+          [ "    <bookmark href='#{href}' id='#{bm_id}' added='#{time}'>",
+          # [ "    <bookmark href='#{href}' id='#{bm_id}'>",
+            "      <title>#{title}</title>",
+            "      <desc>#{desc}</desc>",
+            "    </bookmark>" ,
+          ].join("\n")
+        end.join("\n"),
+
+        '  </folder>',
+      ].join("\n")
+    end
+
+    # attach closing tag and return string
+    ret << '</xbel>'
+    ret.join("\n")
+  end
 
   attr_reader :user
   attr_accessor :use_proxy, :base_uri
@@ -274,7 +254,7 @@ class Rubilicious
     # $stderr.puts "DEBUG: proxy: host = #{proxy_host}, port = #{proxy_port}"
 
     # get host, port, and base URI for API queries
-    uri = URI::parse(@base_uri)
+    uri = URI.parse(@base_uri)
     base = uri.request_uri
 
     # prepend base to url
@@ -296,7 +276,7 @@ class Rubilicious
 
     # get URL, check for error
     resp = http.get(url, @headers)
-    raise Error, "HTTP #{resp.code}: #{resp.message}" unless resp.code =~ /2\d{2}/
+    raise HTTPError, "HTTP #{resp.code}: #{resp.message}" unless resp.code =~ /2\d{2}/
 
     # close HTTP connection, return response
     http.finish
@@ -331,6 +311,20 @@ class Rubilicious
     # return result
     ret
   end
+
+  #
+  # URI-escape a string.
+  #
+  def u(str)
+    CGI.escape(str)
+  end
+
+  #
+  # Escape a string to make it XML-friendly.
+  #
+  def h(str)
+  end
+
 
   # don't touch these :)
   private :get, :http_get, :find_http_proxy
@@ -450,11 +444,11 @@ class Rubilicious
   #   posts.each { |post| puts post['description'] }
   #
   def posts(date = nil, tag = nil)
-    args = [(date ? "dt=#{date}" : nil), (tag ? "tag=#{tag.uri_escape}" : nil)]
+    args = [(date ? "dt=#{date}" : nil), (tag ? "tag=#{u(tag)}" : nil)]
     get('posts/get?' << args.compact.join('&amp;'), 'post').map do |e|
       e['tags'] = e['tag'].split(' ')
       e.delete 'tag'
-      e['time'] = Time::from_iso8601(e['time'])
+      e['time'] = Time.iso8601(e['time'])
       e
     end
   end
@@ -472,11 +466,11 @@ class Rubilicious
   #   recent_links = r.recent('music', 10).map { |post| post['href'] }
   #
   def recent(tag = nil, count = nil)
-    args = [(count ? "count=#{count}" : nil), (tag ? "tag=#{tag.uri_escape}" : nil)]
+    args = [(count ? "count=#{count}" : nil), (tag ? "tag=#{u(tag)}" : nil)]
     get('posts/recent?' << args.compact.join('&amp;'), 'post').map do |e|
       e['tags'] = e['tag'].split(' ')
       e.delete 'tag'
-      e['time'] = Time::from_iso8601(e['time'])
+      e['time'] = Time.iso8601(e['time'])
       e
     end
   end
@@ -494,7 +488,7 @@ class Rubilicious
   #   
   def update
     e = get('posts/update')
-    Time::from_iso8601(e['time'])
+    Time.iso8601(e['time'])
   end
 
   #
@@ -521,9 +515,9 @@ class Rubilicious
     raise Error, "Missing URL" unless url
     raise Error, "Missing Description" unless desc
     args = [
-      ("url=#{url.uri_escape}"), ("description=#{desc.uri_escape}"),
-      (ext ? "extended=#{ext.uri_escape}" : nil),
-      (tags ? "tags=#{tags.uri_escape}" : nil), ("dt=#{time.to_iso8601}")
+      ("url=#{u(url)}"), ("description=#{u(desc)}"),
+      (ext ? "extended=#{u(ext)}" : nil),
+      (tags ? "tags=#{u(tags)}" : nil), ("dt=#{time.iso8601}")
     ]
     get('posts/add?' << args.compact.join('&amp;'))
     nil
@@ -540,7 +534,7 @@ class Rubilicious
   #
   def delete(url)
     raise Error, "Missing URL" unless url
-    get('posts/delete?uri=' << url.uri_escape)
+    get('posts/delete?uri=' << u(url))
     nil
   end
 
@@ -556,8 +550,8 @@ class Rubilicious
   #   # rename tag "rss" to "xml"
   #   r.rename('rss', 'xml')
   #
-  def rename(old, new)
-    args = ["old=#{old.uri_escape}", "new=#{new.uri_escape}"]
+  def rename(old_tag, new_tag)
+    args = ["old=#{u(old_tag)}", "new=#{u(new_tag)}"]
     get('tags/rename?' << args.join('&amp;'))
     nil
   end
@@ -574,7 +568,7 @@ class Rubilicious
   def inbox(date = nil)
     time_prefix = "#{date || Time.now.strftime('%Y-%m-%d')}T"
     ret = get('inbox/get?' << (date ? "dt=#{date}" : ''), 'post').map do |post|
-      post['time'] = Time::from_iso8601("#{time_prefix}#{post['time']}Z")
+      post['time'] = Time.iso8601("#{time_prefix}#{post['time']}Z")
       post
     end
     ret
@@ -629,7 +623,7 @@ class Rubilicious
   #
   def sub(user, tag = nil)
     raise Error, "Missing user" unless user
-    args = ["user=#{user.uri_escape}", (tag ? "tag=#{tag.uri_escape}" : nil)]
+    args = ["user=#{u(user)}", (tag ? "tag=#{u(tag)}" : nil)]
     get('inbox/sub?' << args.compact.join('&amp;'), 'post')
     nil
   end
@@ -685,9 +679,9 @@ class Rubilicious
   #   end
   #
   def all(tag = nil)
-    args = [(tag ? "tag=#{tag.uri_escape}" : nil)]
+    args = [(tag ? "tag=#{u(tag)}" : nil)]
     get('posts/all?' << args.compact.join('&amp;'), 'post').map do |e|
-      e['time'] = Time::from_iso8601(e['time'])
+      e['time'] = Time.iso8601(e['time'])
       e['tag'] = e['tag'].split(/\s/)
     end
   end
@@ -719,7 +713,7 @@ class Rubilicious
   #   r.set_bundle('testbundle', 'ruby programming)
   #
   def set_bundle(bundle, tags)
-    args = ["bundle=#{bundle.uri_escape}", "tags=#{tags.uri_escape}"]
+    args = ["bundle=#{u(bundle)}", "tags=#{u(tags)}"]
     get('tags/bundles/set?' << args.join('&amp;'))
     nil
   end
@@ -734,7 +728,7 @@ class Rubilicious
   #   r.delete_bundle('testbundle')
   #
   def delete_bundle(bundle)
-    args = ["bundle=#{bundle.uri_escape}"]
+    args = ["bundle=#{u(bundle)}"]
     get('tags/bundles/delete?' << args.join('&amp;'))
     nil
   end
@@ -755,10 +749,11 @@ class Rubilicious
   #   end
   #
   def to_xbel(tag = nil)
+    now = Time.now.iso8601
+
     ret = [ "<?xml version='1.0' encoding='utf-8'?>",
-            "<xbel version='1.0' added='#{Time::now.to_iso8601}'>",
-            # "<xbel version='1.0'>",
-            "  <title>#{@user}'s Delicious Bookmarks</title>" ]
+            "<xbel version='1.0' added='#{now}'>",
+            "  <title>#@user's Delicious Bookmarks</title>" ]
   
     tags = all(tag).inject({}) do |tags, bm|
       if bm['tags'] && bm['tags'].size > 0
@@ -776,15 +771,15 @@ class Rubilicious
     tags.keys.sort.each do |tag|
       ary = tags[tag]
       ret <<  [ 
-        "  <folder id='#{tag}' added='#{Time.now.to_iso8601}'>",
+        "  <folder id='#{tag}' added='#{now}'>",
         # "  <folder id='#{tag}'>",
         "    <title>#{tag.capitalize}</title>",
 
         ary.sort { |a, b| a['description'] <=> b['description'] }.map do |bm|
-          href, bm_id = bm['href'].uri_escape, "#{tag}-#{bm['hash']}", 
-          time = bm['time'].to_iso8601
-          title = bm['description'] ? bm['description'].xml_escape : ''
-          desc = bm['extended'] ? bm['extended'].xml_escape : ''
+          href, bm_id = u(bm['href']), "#{tag}-#{bm['hash']}", 
+          time = bm['time'].iso8601
+          title = h(bm['description'] || '')
+          desc = h(bm['extended'] || '')
 
           [ "    <bookmark href='#{href}' id='#{bm_id}' added='#{time}'>",
           # [ "    <bookmark href='#{href}' id='#{bm_id}'>",

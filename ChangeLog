@@ -146,3 +146,15 @@
   * rubilicious.gemspec: bump version to 0.2.0
   * rubilicious.rb: same
 
+* Thu Aug 31 16:22:02 2006, pabs <pabs@pablotron.org>
+  * rubilicious.rb: 
+
+* Thu Aug 31 17:06:06 EDT 2006, Paul Duncan <pabs@pablotron.org>
+  * rubilicious.rb: removed Time, String, and Array additions.  I've 
+    added the last two back as Rubilicious::StringExtras and
+    Rubilicious::ArrayExtras respectively, but I need to do a bit of
+    tweaking to ensure backwards compatability.
+  * rubilicious.rb: switched from String#uri_escape and String#xml_escape
+    to Rubilicios#u and Rubilicious#h, respectively   
+  * rubilicious.rb: use built-in Time.iso8601 calls
+
