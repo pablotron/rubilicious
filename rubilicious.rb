@@ -187,6 +187,8 @@ class Rubilicious
   # list of environment variables to check for HTTP proxy
   PROXY_ENV_VARS = %w{RUBILICIOUS_HTTP_PROXY HTTP_PROXY http_proxy}
 
+  private
+
   #
   # get the HTTP proxy server and port from the environment
   # Returns [nil, nil] if a proxy is not set
@@ -323,12 +325,10 @@ class Rubilicious
   # Escape a string to make it XML-friendly.
   #
   def h(str)
+    CGI.escapeHTML(str)
   end
 
-
-  # don't touch these :)
-  private :get, :http_get, :find_http_proxy
-
+  public
 
   #
   # Connect to Delicious with username 'user' and password 'pass'.
@@ -511,13 +511,17 @@ class Rubilicious
   #         'Raggle', 'Console RSS Aggregator, written in Ruby.',
   #         'rss programming ruby console xml')
   #
-  def add(url, desc, ext = '', tags = '', time = Time.now)
+  def add(url, desc, ext = '', tags = '', time = Time.now, 
+          replace = false, is_private = false)
     raise Error, "Missing URL" unless url
     raise Error, "Missing Description" unless desc
     args = [
       ("url=#{u(url)}"), ("description=#{u(desc)}"),
+      ("dt=#{time.gmtime.iso8601}"),
       (ext ? "extended=#{u(ext)}" : nil),
-      (tags ? "tags=#{u(tags)}" : nil), ("dt=#{time.iso8601}")
+      (tags ? "tags=#{u(tags)}" : nil), 
+      (replace ? 'replace=yes' : nil),
+      (is_private ? 'shared=no' : nil),
     ]
     get('posts/add?' << args.compact.join('&amp;'))
     nil
@@ -749,7 +753,7 @@ class Rubilicious
   #   end
   #
   def to_xbel(tag = nil)
-    now = Time.now.iso8601
+    now = Time.now.gmtime.iso8601
 
     ret = [ "<?xml version='1.0' encoding='utf-8'?>",
             "<xbel version='1.0' added='#{now}'>",

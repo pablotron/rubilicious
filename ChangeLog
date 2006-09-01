@@ -158,3 +158,11 @@
     to Rubilicios#u and Rubilicious#h, respectively   
   * rubilicious.rb: use built-in Time.iso8601 calls
 
+
+* Fri Sep  1 00:23:06 EDT 2006, Paul Duncan <pabs@pablotron.org>
+  * rubilicious.rb: slightly cleaner private/public
+  * rubilicious.rb: add replace and is_private support to
+    Rubilicious#add
+  * rubilicious.rb: fix Rubilicious#h so it actually does something
+  * rubilicious.rb: convert timestamps to GMT first (the delicious API
+    only supports ISO-8601 timestamps in GMT)
