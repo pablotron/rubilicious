@@ -778,8 +778,10 @@ class Rubilicious
   def all(tag = nil)
     args = [(tag ? "tag=#{u(tag)}" : nil)]
     get('posts/all?' << args.compact.join('&amp;'), 'post').map do |e|
-      e['time'] = Time.iso8601(e['time'])
-      e['tag'] = e['tag'].split(/\s/)
+      e.merge({
+        'time' => Time.iso8601(e['time']),
+        'tag'  => e['tag'].split(/\s+/),
+      })
     end
   end
 

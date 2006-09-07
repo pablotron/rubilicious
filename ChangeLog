@@ -186,3 +186,8 @@
   * rubilicious.rb: renamed Rubilicious.to_xbel to Rubilicious.xbel
     (probably a lot less confusing)
   * examples/del_to_xbel.rb: fancier OOP example
+
+* Thu Sep  7 03:58:00 EDT 2006, Paul Duncan <pabs@pablotron.org>
+  * rubilicious.rb: Fix long-standing bug with Rubilicious#all
+  * rubilicious.rb: No actual change, but verified that all, add,
+    update, dates, recent and recent work as advertised
