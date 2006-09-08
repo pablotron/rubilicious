@@ -199,3 +199,7 @@
     include_extras)
   * rubilicious.rb: re-wrote SSL init/verification.  Explained in
     the release notes and the Rubilicious#initialize documentation.
+
+* Fri Sep  8 02:45:48 EDT 2006, Paul Duncan <pabs@pablotron.org>
+  * rubilicious.rb: removed X509Error
+  * rubilicious.rb: removed old SSL cruft

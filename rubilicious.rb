@@ -77,12 +77,6 @@ class Rubilicious
   #
   class NoSSLError < Error; end
 
-  #
-  # Raised if an application attempts to connect to an https resource
-  # using an unverifiable certificate.
-  #
-  class X509Error < Error; end
-
   # 
   # Module containing methods to maintain compatability with methods
   # from Rubilicious 0.1.x.
@@ -1048,55 +1042,3 @@ class Rubilicious
   alias :all_posts :all
   alias :all_bundles :bundles
 end
-
-# 
-#             http.peer_cert.each do |cert|
-#               $stderr.puts "DEBUG: verifying #{cert}"
-#               unless @ssl_store.verify(cert)
-#                 raise Rubilicious::X509Error, "couldn't verify '%s': %s" % [
-#                   cert.subject, 
-#                   @ssl_store.error_string
-#                 ]
-#               end
-#             end
-# 
-
-
-# 
-#     def self.enable_ssl_verification
-#       ::Rubilicious.class_eval {
-#         def init_ssl(opt)
-#           @ssl_init_http_proc = opt['ssl_init_http_proc']
-# 
-#           if cb = opt['ssl_init_proc']
-#             cb.call(self)
-#           else
-#             # set verify mode, create cert store
-#             @ssl_verify_mode = OpenSSL::SSL::VERIFY_PEER
-#             @ssl_store = OpenSSL::X509::Store.new
-# 
-#             # add path to certificate store
-#             cert_path = ENV['RUBILICIOUS_SSL_CERT_DIR'] ||
-#                         ENV['SSL_CERT_DIR'] ||
-#                         OpenSSL::X509::DEFAULT_CERT_DIR
-#             @ssl_store.add_path(cert_path)
-#           end
-#         end
-# 
-#         #
-#         # Initialize SSL for a particular HTTP connection
-#         #
-#         def init_http_ssl(http)
-#           if @init_http_ssl_proc
-#             @init_http_ssl_proc.call(self, http)
-#           else
-#             # enable SSL, set verify mode and store
-#             http.use_ssl = true
-#             http.verify_mode = @ssl_verify_mode
-#             http.cert_store = @ssl_store
-#           end
-#         end
-#       }
-#     end
-# 
-# 
