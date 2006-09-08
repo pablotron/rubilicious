@@ -77,6 +77,12 @@ class Rubilicious
   #
   class NoSSLError < Error; end
 
+  #
+  # Raised if an application attempts to connect to an https resource
+  # using an unverifiable certificate.
+  #
+  class X509Error < Error; end
+
   # 
   # Module containing methods to maintain compatability with methods
   # from Rubilicious 0.1.x.
@@ -160,11 +166,167 @@ class Rubilicious
       end
     end
 
+    module Rubilicious
+      #
+      # Returns a array of inbox entries, optionally filtered by date.
+      #
+      # Raises an exception on error.
+      # 
+      # Example:
+      #   # print a list of posts and who posted them
+      #   r.inbox.each { |post| puts "#{post['user']},#{post['href']}" }
+      #
+      def inbox(date = nil)
+        time_prefix = "#{date || Time.now.strftime('%Y-%m-%d')}T"
+        ret = get('inbox/get?' << (date ? "dt=#{date}" : ''), 'post').map do |post|
+          post['time'] = Time.iso8601("#{time_prefix}#{post['time']}Z")
+          post
+        end
+        ret
+      end
+
+      #
+      # Returns a hash of dates containing inbox entries.
+      # 
+      # Raises an exception on error.
+      #
+      # Example:
+      #   # print out a list of the 10 busiest inbox dates
+      #   dates = r.inbox_dates
+      #   puts dates.keys.sort { |a, b| dates[b] <=> dates[a] }.slice(0, 10)
+      #
+      def inbox_dates
+        get('inbox/dates?', 'date').inject({}) do  |ret, e|
+          ret[e['date']] = e['count'].to_i
+          ret
+        end
+      end
+
+      #
+      # Returns a hash of your subscriptions.
+      # 
+      # Raises an exception on error.
+      #
+      # Example:
+      #   # print out a list of subscriptions
+      #   subs = r.subs
+      #   puts "user:tags"
+      #   subs.keys.sort.each do |sub| 
+      #     puts "#{sub}:#{subs[sub].join(' ')}"
+      #   end
+      #
+      def subs
+        get('inbox/subs?', 'sub').inject({}) do |ret, e|
+          ret[e['user']] = [] unless ret[e['user']]
+          ret[e['user']] += e['tag'].split(' ')
+          ret
+        end
+      end
+
+      #
+      # Add a subscription, optionally to a specific tag.
+      #
+      # Raises an exception on error.
+      #
+      # Example:
+      #   # subscribe to 'humor' links from solarce
+      #   r.sub('solarce', 'humor')
+      #
+      def sub(user, tag = nil)
+        raise Error, "Missing user" unless user
+        args = ["user=#{u(user)}", (tag ? "tag=#{u(tag)}" : nil)]
+        get('inbox/sub?' << args.compact.join('&amp;'), 'post')
+        nil
+      end
+
+      #
+      # Removes a subscription, optionally only a specific tag.
+      #
+      # Raises an exception on error.
+      #
+      # Example:
+      #   # unsubscribe from all links from giblet
+      #   r.unsub('giblet')
+      #
+      def unsub(user, tag = nil)
+        raise Error, "Missing user" unless user
+        args = ["user=#{user}", (tag ? "tag=#{tag}" : nil)]
+        get('inbox/unsub?' << args.compact.join('&amp;'))
+        nil
+      end
+
+      #
+      # Return all of a user's posts, optionally filtered by tag.
+      #
+      # WARNING: This method can generate a large number of requests to 
+      # Delicious, and could be construed as abuse.  Use sparingly, and at
+      # your own risk.
+      #
+      # Raises an exception on error.
+      #
+      # Example:
+      #   # save all posts every by 'delineator' to XBEL format to file
+      #   # "delineator.xbel"
+      #   File.open('delineator.xbel', 'w') do |file|
+      #     file.puts Rubilicious.xbel(r.user_posts('delineator'))
+      #   end
+      #
+      def user_posts(user, tag = nil)
+        was_subscribed = true
+        ret = []
+
+        # unless we already subscribed, subscribe to user
+        unless subs.keys.include?(user)
+          sub(user)
+          was_subscribed = false
+        end
+        
+        # grab list of user's posts
+        inbox_dates.keys.each do |date|
+          ret += inbox(date).find_all do |post| 
+            post['user'] == user && (tag == nil || post['tags'].include?(tag))
+          end
+        end
+
+        # unsubscribe from user unless we were already subscribed
+        unsub(user) unless was_subscribed
+
+        # return list of user's posts
+        ret
+      end
+
+    end
+
+    #
+    # Add the old inbox methods back to Rubilicious.
+    #
+    # Note: The inbox functions (Rubilicious#inbox, Rubilicious#sub,
+    # Rubilicious#unsub, etc) do _not_ work with the current Delicious
+    # API (v1).  They are included for compatability with non-Delicious
+    # that use the old Delicious API.  
+    #
+    # If you want to include all the old Rubilicious methods (including
+    # the changes to String, Array, and Time), see the include_extras
+    # method.
+    #
+    def self.include_inbox
+      ::Rubilicious.class_eval { 
+        include Extras::Rubilicious
+
+        # handy aliases
+        alias :subscriptions :subs
+        alias :subscribe :sub
+        alias :unsubscribe :unsub
+      }
+    end
+
     #
     # Add old Rubilicious 0.1.x-style String, Array, and Time methods to
-    # the environment.
+    # the environment.  This method also adds the old inbox methods back
+    # in to Rubilicious.  If you just want the old inbox methods without
+    # the other methods, see the include_inbox method.
     #
-    # This method is only to maintain source compatability with
+    # Note: This method is only to maintain source compatability with
     # Rubilicious 0.1.x-style applications and should not be used in
     # newer code.
     #
@@ -172,6 +334,9 @@ class Rubilicious
       self.constants.each do |c|
         Kernel.const_get(c).class_eval { include Extras.const_get(c) }
       end
+
+      # include inbox changes
+      include_inbox
     end
   end
       
@@ -250,39 +415,71 @@ class Rubilicious
 
   VERSION = '0.2.0'
   
+  protected
+
   # check for https support (requires OpenSSL)
   HAVE_SSL = begin
     require 'net/https'
 
-    def self.map_ssl_attr(str)
-      'ssl_' << [/^ssl_/, /=$/].inject(str) { |ret, re| ret.gsub(re, '') }
-    end
+    #
+    # Initialize SSL for this Rubilicious instance.
+    #
+    # NOTE: SSL certificate verification is disabled by default. See
+    # Rubilicious#initialize for information on enabling SSL certificate
+    # verification.
+    #
+    def init_ssl(opt)
+      @ssl_init_http = opt['ssl_init_http']
+      @ssl_verify = opt['ssl_verify']
 
-    SSL_ATTR_REGEX = /^(ssl|ca|cert|verify).*=$/
-    SSL_ATTRS = Net::HTTP.instance_methods.grep(SSL_ATTR_REGEX)
-    SSL_IVARS = SSL_ATTRS.map { |str| map_ssl_attr(str) }
+      if cb = opt['ssl_init']
+        cb.call(self, opt)
+      elsif @verify_ssl
+        # set verify mode, create cert store
+        @ssl_verify_mode = OpenSSL::SSL::VERIFY_PEER
+        @ssl_store = OpenSSL::X509::Store.new
 
-    accessors = SSL_IVARS.each { |str| attr_accessor str.intern }
-    attr_accessor *accessors
-
-    def init_http_ssl(http)
-      http.use_ssl = true
-
-      SSL_ATTRS.each do |str|
-        val = send(Rubilicious.map_ssl_attr(str).intern)
-        http.send(str.intern, val) if val
+        # add path to certificate store
+        # TODO: documentation, at least in method definition
+        cert_path = opt['ssl_cert_path'] ||
+                    ENV['RUBILICIOUS_SSL_CERT_DIR'] ||
+                    ENV['SSL_CERT_DIR'] ||
+                    OpenSSL::X509::DEFAULT_CERT_DIR
+        @ssl_store.add_path(cert_path)
+      else
+        # disable SSL verification by default
+        @ssl_verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
     end
 
+    #
+    # Initialize SSL for a particular HTTP connection
+    #
+    def init_http_ssl(http)
+      if @ssl_init_http
+        @ssl_init_http.call(self, http)
+      else
+        # enable SSL for this HTTP connection
+        http.use_ssl = true
+
+        if @ssl_verify
+          # set the verify mode and the cert store
+          http.verify_mode = @ssl_verify_mode
+          http.cert_store = @ssl_store
+        end
+      end
+    end
+
+    # return true (we have SSL support)
     true
   rescue LoadError
+    # return false (no SSL support)
     false
   end
 
   # list of environment variables to check for HTTP proxy
   PROXY_ENV_VARS = %w{RUBILICIOUS_HTTP_PROXY HTTP_PROXY http_proxy}
 
-  private
 
   #
   # get the HTTP proxy server and port from the environment
@@ -429,6 +626,7 @@ class Rubilicious
   # Note: if the username or password is incorrect, Rubilicious will not
   # raise an exception until you make an actual call.
   # 
+  # Options: 
   # Rubilicious also accepts several optional parameters in the opt
   # Hash.  Here's a list of the supported keys:
   #
@@ -438,7 +636,43 @@ class Rubilicious
   #   you know what you're doing. (default: 'https://api.del.icio.us/v1')
   # * user_agent: User Agent string to pass to Delicious in each HTTP
   #   request. (default: 'Rubilicious/VERSION Ruby/VERSION')
+  # * ssl_verify: Enable SSL certificate validation/verification.
+  #   Rubilicious will verify the issuer of the server-side certificate
+  #   against the list of trusted certificates.  You can customize this
+  #   behavior; see below for more information.
+  # * ssl_cert_path: Override the default SSL certificate directory.
+  #   If this isn't set, Rubilicious checks the environment variables
+  #   RUBILICIOUS_SSL_CERT_DIR and SSL_CERT_DIR.  If neither of those
+  #   are set, Rubilicious uses OpenSSL's built-in default.
+  # * ssl_init: Callback proc to use for SSL initialization.  See "SSL
+  #   Options" below for more information.
+  # * ssl_init_http: Callback proc to use for initializing each HTTPS
+  #   connection.  See "SSL Options" below for more information.
   #
+  # SSL Options:
+  # By default, Rubilicious does no server-side certificate validation.
+  # This is deliberate; I'm not sure how reasonable each platform's
+  # OpenSSL configuration is, and I'm also not sure how complete each
+  # platform's root certificate list is.  If you're sure your platform
+  # is configured properly, you can enable server-side certificate
+  # verification using the 'ssl_verify' option, like so:
+  #    
+  #   # enable SSL certificate verification
+  #   r = Rubilicious.new(user, pass, 'ssl_verify' => true)
+  #
+  # If you keep your list of root certificates in a directory other than
+  # the OpenSSL default, you can override the path by setting the
+  # 'ssl_cert_path' option, or the RUBILICIOUS_SSL_CERT_DIR or
+  # SSL_CERT_DIR environment variables (they're checked in that order).
+  # If none of those are set, Rubilicious falls back to OpenSSL's
+  # built-in certificate directory.
+  #
+  # If you need more elaborate SSL verification -- to use OSCP or
+  # check a CRL, for example --  you can use the 'ssl_init' and
+  # 'ssl_init_http' callbacks.  The former is called once when an
+  # instance of Rubilicious is initialized, and the latter is called for
+  # each HTTPS connection.  
+  # 
   # Examples:
   #   # connect to delicious with as 'pabs' with the password 'password'
   #   r = Rubilicious.new('pabs', 'password')
@@ -460,9 +694,7 @@ class Rubilicious
     # if we have SSL support, then set the SSL verify mode
     # (defaults to VERIFY_NONE, which is horribly insecure)
     if HAVE_SSL
-      # set the verify mode to a reasonable default
-      @ssl_verify_mode = OpenSSL::SSL::VERIFY_NONE
-      SSL_IVARS.each { |str| send("#{str}=".intern, opt[str]) if opt[str] }
+      init_ssl(opt)
     end
 
     # set user agent string
@@ -654,94 +886,6 @@ class Rubilicious
   end
 
   #
-  # Returns a array of inbox entries, optionally filtered by date.
-  #
-  # Raises an exception on error.
-  # 
-  # Example:
-  #   # print a list of posts and who posted them
-  #   r.inbox.each { |post| puts "#{post['user']},#{post['href']}" }
-  #
-  def inbox(date = nil)
-    time_prefix = "#{date || Time.now.strftime('%Y-%m-%d')}T"
-    ret = get('inbox/get?' << (date ? "dt=#{date}" : ''), 'post').map do |post|
-      post['time'] = Time.iso8601("#{time_prefix}#{post['time']}Z")
-      post
-    end
-    ret
-  end
-
-  #
-  # Returns a hash of dates containing inbox entries.
-  # 
-  # Raises an exception on error.
-  #
-  # Example:
-  #   # print out a list of the 10 busiest inbox dates
-  #   dates = r.inbox_dates
-  #   puts dates.keys.sort { |a, b| dates[b] <=> dates[a] }.slice(0, 10)
-  #
-  def inbox_dates
-    get('inbox/dates?', 'date').inject({}) do  |ret, e|
-      ret[e['date']] = e['count'].to_i
-      ret
-    end
-  end
-
-  #
-  # Returns a hash of your subscriptions.
-  # 
-  # Raises an exception on error.
-  #
-  # Example:
-  #   # print out a list of subscriptions
-  #   subs = r.subs
-  #   puts "user:tags"
-  #   subs.keys.sort.each do |sub| 
-  #     puts "#{sub}:#{subs[sub].join(' ')}"
-  #   end
-  #
-  def subs
-    get('inbox/subs?', 'sub').inject({}) do |ret, e|
-      ret[e['user']] = [] unless ret[e['user']]
-      ret[e['user']] += e['tag'].split(' ')
-      ret
-    end
-  end
-
-  #
-  # Add a subscription, optionally to a specific tag.
-  #
-  # Raises an exception on error.
-  #
-  # Example:
-  #   # subscribe to 'humor' links from solarce
-  #   r.sub('solarce', 'humor')
-  #
-  def sub(user, tag = nil)
-    raise Error, "Missing user" unless user
-    args = ["user=#{u(user)}", (tag ? "tag=#{u(tag)}" : nil)]
-    get('inbox/sub?' << args.compact.join('&amp;'), 'post')
-    nil
-  end
-
-  #
-  # Removes a subscription, optionally only a specific tag.
-  #
-  # Raises an exception on error.
-  #
-  # Example:
-  #   # unsubscribe from all links from giblet
-  #   r.unsub('giblet')
-  #
-  def unsub(user, tag = nil)
-    raise Error, "Missing user" unless user
-    args = ["user=#{user}", (tag ? "tag=#{tag}" : nil)]
-    get('inbox/unsub?' << args.compact.join('&amp;'))
-    nil
-  end
-
-  #
   # Return the last update time.
   #
   # Note: this method should be used before calling methods like .posts
@@ -899,51 +1043,60 @@ class Rubilicious
     ret.join("\n")
   end
 
-  #
-  # Return all of a user's posts, optionally filtered by tag.
-  #
-  # WARNING: This method can generate a large number of requests to 
-  # Delicious, and could be construed as abuse.  Use sparingly, and at
-  # your own risk.
-  #
-  # Raises an exception on error.
-  #
-  # Example:
-  #   # save all posts every by 'delineator' to XBEL format to file
-  #   # "delineator.xbel"
-  #   File.open('delineator.xbel', 'w') do |file|
-  #     file.puts Rubilicious.xbel(r.user_posts('delineator'))
-  #   end
-  #
-  def user_posts(user, tag = nil)
-    was_subscribed = true
-    ret = []
-
-    # unless we already subscribed, subscribe to user
-    unless subs.keys.include?(user)
-      sub(user)
-      was_subscribed = false
-    end
-    
-    # grab list of user's posts
-    inbox_dates.keys.each do |date|
-      ret += inbox(date).find_all do |post| 
-        post['user'] == user && (tag == nil || post['tags'].include?(tag))
-      end
-    end
-
-    # unsubscribe from user unless we were already subscribed
-    unsub(user) unless was_subscribed
-
-    # return list of user's posts
-    ret
-  end
-
   # convenience aliases
   alias :rename_tag :rename
-  alias :subscriptions :subs
-  alias :subscribe :sub
-  alias :unsubscribe :unsub
   alias :all_posts :all
   alias :all_bundles :bundles
 end
+
+# 
+#             http.peer_cert.each do |cert|
+#               $stderr.puts "DEBUG: verifying #{cert}"
+#               unless @ssl_store.verify(cert)
+#                 raise Rubilicious::X509Error, "couldn't verify '%s': %s" % [
+#                   cert.subject, 
+#                   @ssl_store.error_string
+#                 ]
+#               end
+#             end
+# 
+
+
+# 
+#     def self.enable_ssl_verification
+#       ::Rubilicious.class_eval {
+#         def init_ssl(opt)
+#           @ssl_init_http_proc = opt['ssl_init_http_proc']
+# 
+#           if cb = opt['ssl_init_proc']
+#             cb.call(self)
+#           else
+#             # set verify mode, create cert store
+#             @ssl_verify_mode = OpenSSL::SSL::VERIFY_PEER
+#             @ssl_store = OpenSSL::X509::Store.new
+# 
+#             # add path to certificate store
+#             cert_path = ENV['RUBILICIOUS_SSL_CERT_DIR'] ||
+#                         ENV['SSL_CERT_DIR'] ||
+#                         OpenSSL::X509::DEFAULT_CERT_DIR
+#             @ssl_store.add_path(cert_path)
+#           end
+#         end
+# 
+#         #
+#         # Initialize SSL for a particular HTTP connection
+#         #
+#         def init_http_ssl(http)
+#           if @init_http_ssl_proc
+#             @init_http_ssl_proc.call(self, http)
+#           else
+#             # enable SSL, set verify mode and store
+#             http.use_ssl = true
+#             http.verify_mode = @ssl_verify_mode
+#             http.cert_store = @ssl_store
+#           end
+#         end
+#       }
+#     end
+# 
+# 
