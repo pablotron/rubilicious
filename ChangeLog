@@ -203,3 +203,6 @@
 * Fri Sep  8 02:45:48 EDT 2006, Paul Duncan <pabs@pablotron.org>
   * rubilicious.rb: removed X509Error
   * rubilicious.rb: removed old SSL cruft
+
+* Fri Sep  8 02:46:58 EDT 2006, Paul Duncan <pabs@pablotron.org>
+  * release_notes-0.2.0.txt: removed old notes

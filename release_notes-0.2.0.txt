@@ -186,9 +186,3 @@ have to perform on any gem signed by me in the future.
   * ChangeLog:  http://pablotron.org/software/rubilicious/ChangeLog-0.2.0
   * API Docs:   http://pablotron.org/software/rubilicious/doc/
   * Release Notes: http://pablotron.org/software/rubilicious/release_notes-0.2.0.txt
-
-
-verified all(tag), bundle calls
-user_tags doesn't work any more (becausse they rely on subscriptions),
-but you can include tehm using Rubilicious::Extras.include_inbox
-
