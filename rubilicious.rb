@@ -7,7 +7,7 @@
 # page at http://pablotron.org/software/rubilicious/.                 #
 #                                                                     #
 #                                                                     #
-# Copyright (C)  2004-2006 Paul Duncan (pabs@pablotron.org).          #
+# Copyright (C) 2004-2006 Paul Duncan (pabs@pablotron.org).           #
 #                                                                     #
 # Permission is hereby granted, free of charge, to any person         #
 # obtaining a copy of this software and associated documentation      #
@@ -620,6 +620,13 @@ class Rubilicious
   # Note: if the username or password is incorrect, Rubilicious will not
   # raise an exception until you make an actual call.
   # 
+  # Examples:
+  #   # connect to delicious with as 'pabs' with the password 'password'
+  #   r = Rubilicious.new('pabs', 'password')
+  # 
+  #   # connect to delicious, but never check for an HTTP proxy
+  #   r = Rubilicious.new('pabs', 'password', {'use_proxy' => false})
+  # 
   # Options: 
   # Rubilicious also accepts several optional parameters in the opt
   # Hash.  Here's a list of the supported keys:
@@ -665,14 +672,36 @@ class Rubilicious
   # check a CRL, for example --  you can use the 'ssl_init' and
   # 'ssl_init_http' callbacks.  The former is called once when an
   # instance of Rubilicious is initialized, and the latter is called for
-  # each HTTPS connection.  
+  # each HTTPS connection.  Here's an example of using the 'ssl_init'
+  # and 'ssl_init_http' callbacks:
   # 
-  # Examples:
-  #   # connect to delicious with as 'pabs' with the password 'password'
-  #   r = Rubilicious.new('pabs', 'password')
-  # 
-  #   # connect to delicious, but never check for an HTTP proxy
-  #   r = Rubilicious.new('pabs', 'password', {'use_proxy' => false})
+  # # create certificate store, set verify mode
+  # x509_store = OpenSSL::X509::Store.new 
+  # x509_store.add_path(OpenSSL::X509::DEFAULT_CERT_DIR)
+  # verify_mode = OpenSSL::SSL::VERIFY_PEER
+  #
+  #   # define rubilicious callbacks
+  #   rb_opts = {
+  #     # ssl init callback (called once per instance)
+  #     'ssl_init' => proc { |rb, opt|
+  #       cert_path = opt['ssl_cert_path'] ||
+  #                   ENV['RUBILICIOUS_SSL_CERT_DIR'] ||
+  #                   ENV['SSL_CERT_DIR'] ||
+  #                   OpenSSL::X509::DEFAULT_CERT_DIR
+  #       x509_store.add_path(cert_path)
+  #       
+  #     },
+  #   
+  #     # http init callback (called once per HTTPS connection)
+  #     'ssl_init_http' => proc { |rb, http|
+  #       http.use_ssl = true
+  #       http.verify_mode = verify_mode
+  #       http.cert_store = x509_store
+  #     },
+  #   }
+  #  
+  #   # create rubilicious object
+  #   rb = Rubilicious.new(user, pass, rb_opts)
   #
   def initialize(user, pass, opt = {})
     @user, @use_proxy = user, true

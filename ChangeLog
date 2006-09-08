@@ -206,3 +206,8 @@
 
 * Fri Sep  8 02:46:58 EDT 2006, Paul Duncan <pabs@pablotron.org>
   * release_notes-0.2.0.txt: removed old notes
+
+* Fri Sep  8 03:03:53 EDT 2006, Paul Duncan <pabs@pablotron.org>
+  * rubilicious.rb: fixed minor typo
+  * rubilicious.rb: added documentation for 'ssl_init' and
+    'ssl_init_http' options.
