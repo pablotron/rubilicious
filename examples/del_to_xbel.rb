@@ -17,7 +17,7 @@ class XBELDump
     @io.close if @is_file
   end
 
-  def self.run(args)
+  def self.run(*args)
     # check args
     unless args.size > 1
       $stderr.puts "Usage: $0 [user] [pass] <output_file>"

@@ -211,3 +211,10 @@
   * rubilicious.rb: fixed minor typo
   * rubilicious.rb: added documentation for 'ssl_init' and
     'ssl_init_http' options.
+
+* Fri Sep  8 03:37:18 EDT 2006, Paul Duncan <pabs@pablotron.org>
+  * README: added reference to release notes
+  * README: expanded install section
+  * README: minor formating and wording changes
+  * rubilicious.rb: 'desc' => 'description' oops!
+  * examples/del_to_xbel.rb: fix XBELDump.run

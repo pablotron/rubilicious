@@ -45,11 +45,14 @@ require 'rexml/document'
 # You'll need to create an account at Delicious (http://del.icio.us/) in
 # order to use this API.
 #
-# Simple Examples:
+# Simple Examples: 
+#   # load rubilicious
+#   require 'rubilicious'
+#
 #   # connect to delicious and get a list of your recent posts
 #   r = Rubilicious.new('user', 'password')
 #   r.recent.each do |post|
-#     puts "#{post['desc']}: #{post['href']}"
+#     puts "#{post['description']}: #{post['href']}"
 #   end
 #
 #   # add a new link to delicious
