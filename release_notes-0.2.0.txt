@@ -139,7 +139,7 @@ these files like so:
 
 
   # verify that both certificates were signed by me
-  for pgp_sig in {ca,rubygems}.crt.asc; do pgp_sig $sig; done
+  for sig in {ca,rubygems}.crt.asc; do gpg -v $sig; done
 
 If everything checks out okay and you either, a) believe that my
 PGP signature is legitimate, or b) can establish a trusted relationship
